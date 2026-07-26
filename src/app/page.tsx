@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import JudgeViewer from '@/components/JudgeViewer';
 import RankingsTable from '@/components/RankingsTable';
@@ -9,6 +10,18 @@ import AdminUploadModal from '@/components/AdminUploadModal';
 import AdminLoginModal from '@/components/AdminLoginModal';
 import KakaoLoginModal from '@/components/KakaoLoginModal';
 import { Lock, FileCheck2, PlusCircle, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+
+// 브라우저 쿠키에서 특정 키의 값을 읽는 헬퍼
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+// 브라우저 쿠키 삭제 헬퍼
+function deleteCookie(name: string) {
+  document.cookie = `${name}=; Max-Age=0; path=/`;
+}
 
 export default function HomePage() {
   // 초기 계정 상태: 비로그인(LOGGED_OUT) 상태
@@ -73,6 +86,37 @@ export default function HomePage() {
     }
   };
 
+  // ─────────────────────────────────────────────────────────
+  // 카카오 OAuth 리디렉션 후 쿠키에서 사용자 정보 자동 복구
+  // ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    // URL에 카카오 에러 파라미터가 있으면 알림
+    const params = new URLSearchParams(window.location.search);
+    const kakaoError = params.get('kakao_error');
+    if (kakaoError) {
+      if (kakaoError === 'cancelled') {
+        // 사용자가 취소한 경우는 조용히 처리
+      } else {
+        alert(`카카오 로그인 오류: ${kakaoError}`);
+      }
+      // URL 파라미터 정리
+      window.history.replaceState({}, '', '/');
+    }
+
+    // 쿠키에서 사용자 정보 읽기 (카카오 콜백 후 자동 로그인)
+    const userCookie = getCookie('huss_user');
+    if (userCookie) {
+      try {
+        const userFromCookie = JSON.parse(userCookie);
+        if (userFromCookie && userFromCookie.id) {
+          setCurrentUser(userFromCookie);
+        }
+      } catch {
+        // 쿠키 파싱 실패 시 무시
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (currentUser) {
       loadData(currentUser);
@@ -110,6 +154,10 @@ export default function HomePage() {
         console.log('카카오 로그아웃 완료');
       });
     }
+    // 인증 및 사용자 정보 쿠키 삭제
+    deleteCookie('huss_user');
+    deleteCookie('huss_token');
+
     setCurrentUser(null);
     setSubmissions([]);
     setRankings([]);
