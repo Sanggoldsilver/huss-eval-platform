@@ -22,9 +22,9 @@ export default function KakaoLoginModal({
   // 카카오 공식 표준인 인가 코드(Authorization Code) 방식으로 전환.
   // ─────────────────────────────────────────────────────────────
   const handleKakaoLogin = () => {
-    const clientId = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
+    const clientId = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
     if (!clientId) {
-      alert('카카오 JavaScript API 키가 설정되지 않았습니다.');
+      alert('카카오 REST API 키가 설정되지 않았습니다.');
       return;
     }
 
