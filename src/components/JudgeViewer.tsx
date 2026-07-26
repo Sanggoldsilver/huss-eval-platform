@@ -158,42 +158,42 @@ export default function JudgeViewer({
               <FileText className="w-3.5 h-3.5" /> 2. 시각화 결과물 (공개)
             </button>
 
+            <button
+              onClick={() => setActiveTab('app')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                activeTab === 'app'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" /> 1. 참가 신청서
+            </button>
+
+            <button
+              onClick={() => setActiveTab('ai')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                activeTab === 'ai'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" /> 3. AI 출처 고지서
+            </button>
+
             {!isSupporter ? (
-              <>
-                <button
-                  onClick={() => setActiveTab('app')}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
-                    activeTab === 'app'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" /> 1. 참가 신청서
-                </button>
-                <button
-                  onClick={() => setActiveTab('ai')}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
-                    activeTab === 'ai'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" /> 3. AI 출처 고지서
-                </button>
-                <button
-                  onClick={() => setActiveTab('privacy')}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
-                    activeTab === 'privacy'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" /> 4. 개인정보 동의서
-                </button>
-              </>
+              <button
+                onClick={() => setActiveTab('privacy')}
+                className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                  activeTab === 'privacy'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" /> 4. 개인정보 동의서
+              </button>
             ) : (
               <span className="text-xs text-slate-500 flex items-center gap-1 ml-auto">
-                <Lock className="w-3 h-3 text-amber-500" /> 인적사항 포함 서류는 서포터즈에 비공개됩니다.
+                <Lock className="w-3 h-3 text-amber-500" /> 개인정보 동의서는 서포터즈에 비공개됩니다.
               </span>
             )}
           </div>

@@ -40,9 +40,7 @@ export function anonymizeSubmissionForSupporter<T extends {
       studentName: '블라인드 (익명)',
       studentId: '****',
       department: '인문사회 계열',
-      applicationFileUrl: null,       // 1. 참가 신청서 비공개
-      aiSourceFileUrl: null,          // 3. AI 고지서 비공개
-      privacyAgreementFileUrl: null, // 4. 동의서 비공개
+      privacyAgreementFileUrl: null, // 4. 동의서만 비공개
     };
   }
   return submission;
