@@ -14,6 +14,11 @@ async function getKakaoToken(code: string, redirectUri: string): Promise<string>
     code,
   });
 
+  // Client Secret이 설정되어 있다면 추가
+  if (process.env.KAKAO_CLIENT_SECRET) {
+    params.append('client_secret', process.env.KAKAO_CLIENT_SECRET);
+  }
+
   const res = await fetch('https://kauth.kakao.com/oauth/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
