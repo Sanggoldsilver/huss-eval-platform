@@ -11,6 +11,13 @@ import AdminLoginModal from '@/components/AdminLoginModal';
 import KakaoLoginModal from '@/components/KakaoLoginModal';
 import { Lock, FileCheck2, PlusCircle, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
 
+// 카카오 window 타입 선언
+declare global {
+  interface Window {
+    Kakao: any;
+  }
+}
+
 // 브라우저 쿠키에서 특정 키의 값을 읽는 헬퍼
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
