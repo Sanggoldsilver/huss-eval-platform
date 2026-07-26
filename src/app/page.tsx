@@ -104,6 +104,12 @@ export default function HomePage() {
   };
 
   const handleLogout = () => {
+    // 카카오 SDK 세션도 함께 종료 (재로그인 시 팝업 정상 동작을 위해)
+    if (typeof window !== 'undefined' && window.Kakao && window.Kakao.Auth && window.Kakao.Auth.getAccessToken()) {
+      window.Kakao.Auth.logout(() => {
+        console.log('카카오 로그아웃 완료');
+      });
+    }
     setCurrentUser(null);
     setSubmissions([]);
     setRankings([]);
