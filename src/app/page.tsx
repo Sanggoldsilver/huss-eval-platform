@@ -1,65 +1,301 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useState, useEffect } from 'react';
+import Navbar from '@/components/Navbar';
+import JudgeViewer from '@/components/JudgeViewer';
+import RankingsTable from '@/components/RankingsTable';
+import AdminUserModal from '@/components/AdminUserModal';
+import AdminUploadModal from '@/components/AdminUploadModal';
+import AdminLoginModal from '@/components/AdminLoginModal';
+import KakaoLoginModal from '@/components/KakaoLoginModal';
+import { Lock, FileCheck2, PlusCircle, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+
+export default function HomePage() {
+  // 초기 계정 상태: 비로그인(LOGGED_OUT) 상태
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    name: string;
+    role: string | null;
+    groupType: string | null;
+    status: string;
+  } | null>(null);
+
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string>('');
+  const [rankings, setRankings] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // 모달 제어 상태
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
+  const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState<boolean>(false);
+  const [isKakaoLoginModalOpen, setIsKakaoLoginModalOpen] = useState<boolean>(false);
+
+  // 데이터 로드
+  const loadData = async (userOverride = currentUser) => {
+    if (!userOverride) {
+      setSubmissions([]);
+      setRankings([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await fetch('/api/seed', { method: 'POST' });
+
+      const subRes = await fetch('/api/submissions', {
+        headers: {
+          'x-user-role': userOverride?.role || '',
+          'x-user-id': userOverride?.id || '',
+        },
+      });
+      const subData = await subRes.json();
+      if (subData.success) {
+        setSubmissions(subData.submissions || []);
+        if (subData.submissions && subData.submissions.length > 0) {
+          if (!selectedSubmissionId || !subData.submissions.find((s: any) => s.id === selectedSubmissionId)) {
+            setSelectedSubmissionId(subData.submissions[0].id);
+          }
+        } else {
+          setSelectedSubmissionId('');
+        }
+      }
+
+      const rankRes = await fetch('/api/rankings');
+      const rankData = await rankRes.json();
+      if (rankData.success) {
+        setRankings(rankData.rankings || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      loadData(currentUser);
+    }
+  }, [currentUser]);
+
+  const handleAdminLoginSuccess = (adminUser: any) => {
+    const adminState = {
+      id: adminUser.id,
+      name: adminUser.name,
+      role: adminUser.role,
+      groupType: adminUser.groupType,
+      status: adminUser.status,
+    };
+    setCurrentUser(adminState);
+    loadData(adminState);
+  };
+
+  const handleKakaoLoginSuccess = (user: any) => {
+    const userState = {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      groupType: user.groupType,
+      status: user.status,
+    };
+    setCurrentUser(userState);
+    loadData(userState);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setSubmissions([]);
+    setRankings([]);
+  };
+
+  const handleSubmitEvaluation = async (evaluationData: any) => {
+    if (!currentUser) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    const res = await fetch('/api/evaluations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': currentUser.id,
+      },
+      body: JSON.stringify(evaluationData),
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      loadData(currentUser);
+    } else {
+      throw new Error(data.error || '제출 실패');
+    }
+  };
+
+  const selectedSubmission = submissions.find((s) => s.id === selectedSubmissionId);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col">
+      {/* 탑 네비게이션 헤더 */}
+      <Navbar
+        currentUser={currentUser}
+        onOpenKakaoLoginModal={() => setIsKakaoLoginModalOpen(true)}
+        onOpenAdminLoginModal={() => setIsAdminLoginModalOpen(true)}
+        onOpenAdminModal={() => setIsAdminModalOpen(true)}
+        onOpenUploadModal={() => setIsUploadModalOpen(true)}
+        onLogout={handleLogout}
+      />
+
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+        {/* 비로그인 상태일 때: ansim_2_ide 색상 기반 로그인 보안 관문만 렌더링 */}
+        {!currentUser ? (
+          <div className="glass-card p-12 text-center my-16 max-w-2xl mx-auto border-[#0083CD]/20 shadow-2xl animate-fade-in">
+            <div className="w-20 h-20 rounded-3xl bg-[#0083CD]/10 border border-[#0083CD]/30 flex items-center justify-center mx-auto mb-6 text-[#0083CD]">
+              <Lock className="w-10 h-10" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-100 mb-3">HUSS AI 활용 인문사회 시각화 공모전</h2>
+            <p className="text-slate-400 text-sm leading-relaxed mb-8 max-w-md mx-auto">
+              본 시스템은 인가된 심사위원 및 사업단 관리자 전용 평가 플랫폼입니다. 내부 심사 자료 및 평가 결과를 열람하시려면 로그인해주십시오.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              {/* ansim_2_ide 카카오 공식 시그니처 버튼 */}
+              <button
+                onClick={() => setIsKakaoLoginModalOpen(true)}
+                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#FEE500] hover:bg-[#e6cf00] text-[#000000] font-bold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-current">
+                  <path d="M16 4.64c-6.96 0-12.64 4.48-12.64 10.08 0 3.52 2.32 6.64 5.76 8.48l-1.44 5.44c-0.16 0.48 0.4 0.88 0.8 0.56l6.4-4.32c0.4 0.08 0.8 0.08 1.12 0.08 6.96 0 12.64-4.48 12.64-10.08 0-5.6-5.68-10.24-12.64-10.24z" />
+                </svg>
+                카카오 로그인
+              </button>
+              <button
+                onClick={() => setIsAdminLoginModalOpen(true)}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold transition text-xs shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4" /> 관리자 로그인
+              </button>
+            </div>
+          </div>
+        ) : currentUser.status === 'PENDING' ? (
+          /* 승인 대기자(PENDING) 내부 접근 차단 안내 */
+          <div className="glass-card p-12 text-center my-16 max-w-xl mx-auto border-amber-500/30">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-4 text-amber-400">
+              <Lock className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-100 mb-2">관리자 승인 대기 중입니다</h2>
+            <p className="text-slate-400 text-sm leading-relaxed mb-6">
+              카카오 계정 가입이 완료되었으나, 담당 관리자의 권한 승인(선생님/서포터즈 지정) 후 평가 플랫폼 내부 콘텐츠에 접근하실 수 있습니다.
+            </p>
+          </div>
+        ) : (
+          /* 로그인 승인 완료 사용자만 내부 콘텐츠 렌더링 */
+          <>
+            {/* 등록된 작품이 없을 때 안내 카드 */}
+            {submissions.length === 0 ? (
+              <div className="glass-card p-12 text-center my-8 border-[#0083CD]/20">
+                <div className="w-16 h-16 rounded-2xl bg-[#0083CD]/10 border border-[#0083CD]/30 flex items-center justify-center mx-auto mb-4 text-[#0083CD]">
+                  <AlertCircle className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-100 mb-2">현재 등록된 심사 작품이 없습니다</h3>
+                <p className="text-slate-400 text-xs max-w-lg mx-auto leading-relaxed mb-6">
+                  관리자 계정(smuhuss4th)으로 상단 &ldquo;자료 업로드&rdquo; 버튼을 눌러 심사 대상 작품을 등록해주십시오.
+                </p>
+                {currentUser.role === 'ADMIN' && (
+                  <button
+                    onClick={() => setIsUploadModalOpen(true)}
+                    className="px-4 py-2.5 rounded-xl bg-[#0083CD] hover:bg-[#0284c7] text-white font-bold text-xs shadow-lg shadow-[#0083CD]/20 inline-flex items-center gap-2"
+                  >
+                    <PlusCircle className="w-4 h-4" /> 첫 번째 심사 작품 등록하기
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* 2. 작품 선택 탭 / 셀렉터 바 */}
+                <div className="glass-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <FileCheck2 className="w-5 h-5 text-[#0083CD]" />
+                    <span className="font-bold text-sm text-slate-200">
+                      심사 작품 선택 ({submissions.length}개):
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+                    {submissions.map((sub, idx) => {
+                      const isSelected = sub.id === selectedSubmissionId;
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => setSelectedSubmissionId(sub.id)}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-[#0083CD] text-white shadow-md shadow-[#0083CD]/20'
+                              : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'
+                          }`}
+                        >
+                          <span>작품 {idx + 1}</span>
+                          <span className="truncate max-w-[140px] font-normal">{sub.title}</span>
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      onClick={() => loadData(currentUser)}
+                      className="p-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-slate-100 border border-slate-800 ml-2"
+                      title="새로고침"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. 심사위원 뷰어 컴포넌트 */}
+                {selectedSubmission && (
+                  <JudgeViewer
+                    submission={selectedSubmission}
+                    currentUserRole={currentUser.role}
+                    currentUserId={currentUser.id}
+                    onSubmitEvaluation={handleSubmitEvaluation}
+                  />
+                )}
+              </>
+            )}
+
+            {/* 4. 평가 랭킹 종합표 */}
+            <RankingsTable rankings={rankings} currentUserRole={currentUser.role} />
+          </>
+        )}
       </main>
+
+      {/* 카카오 소셜 로그인 모달 */}
+      <KakaoLoginModal
+        isOpen={isKakaoLoginModalOpen}
+        onClose={() => setIsKakaoLoginModalOpen(false)}
+        onLoginSuccess={handleKakaoLoginSuccess}
+      />
+
+      {/* 관리자 전용 로그인 모달 */}
+      <AdminLoginModal
+        isOpen={isAdminLoginModalOpen}
+        onClose={() => setIsAdminLoginModalOpen(false)}
+        onAdminLoginSuccess={handleAdminLoginSuccess}
+      />
+
+      {/* 관리자 회원 승인 모달 */}
+      <AdminUserModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        onRefreshUsers={() => loadData(currentUser)}
+      />
+
+      {/* 관리자 자료 업로드 모달 */}
+      <AdminUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onRefreshSubmissions={() => loadData(currentUser)}
+        currentUserRole={currentUser?.role || null}
+        submissions={submissions}
+      />
     </div>
   );
 }

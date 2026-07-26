@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String       @id @default(uuid())
+  kakaoId      String       @unique
+  name         String
+  email        String?
+  profileImage String?
+  status       String       @default("PENDING") // PENDING, APPROVED, REJECTED
+  role         String?      // TEACHER, SUPPORTER, ADMIN
+  groupType    String?      // BUSINESS_TEAM (선생님 50%), SUPPORTERS_TEAM (서포터즈 50%)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  evaluations  Evaluation[]
+}
+
+model Submission {
+  id                      String       @id @default(uuid())
+  title                   String       // 과제명/작품명
+  studentName             String       // 대표자/팀원 이름
+  studentId               String       // 학번
+  department              String       // 소속 학과/학부
+  summary                 String?      // 결과물 설명 요약
+  applicationFileUrl      String?      // 1. 참가 신청서 Google Drive URL
+  resultFileUrl           String       // 2. 시각화 결과물 Google Drive URL
+  aiSourceFileUrl         String?      // 3. AI 활용 고지서 Google Drive URL
+  privacyAgreementFileUrl String?      // 4. 개인정보 동의서 Google Drive URL
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  evaluations             Evaluation[]
+}
+
+model Evaluation {
+  id                           String     @id @default(uuid())
+  submissionId                 String
+  evaluatorId                  String
+  problemDefinitionScore       Int        // 1. 문제인식 및 주제 적절성 (배점 30점)
+  visualizationCreativityScore Int        // 2. 시각화 전달력 및 AI 활용 창의성 (배점 30점)
+  socialValueScore             Int        // 3. 인문사회적 가치 실현도 (배점 15점)
+  majorUtilizationScore        Int        // 4. 소속 전공 활용도 (배점 15점)
+  dataAccuracyScore            Int        // 5. 데이터 표현의 정확성 (배점 10점)
+  comment                      String?    // 심사위원 단평
+  totalScore                   Int        // 총점 (최대 100점)
+  createdAt                    DateTime   @default(now())
+  updatedAt                    DateTime   @updatedAt
+
+  submission                   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  evaluator                    User       @relation(fields: [evaluatorId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, evaluatorId])
+}
