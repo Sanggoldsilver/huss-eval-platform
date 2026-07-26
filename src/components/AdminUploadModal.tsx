@@ -237,7 +237,7 @@ export default function AdminUploadModal({
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">1. 참가 신청서 Google Drive URL (선생님/관리자 공개)</label>
+                  <label className="text-slate-400 block mb-1">1. 참가 신청서 Google Drive URL (선생님/서포터즈 공개)</label>
                   <input
                     type="text"
                     value={appUrl}
@@ -248,7 +248,7 @@ export default function AdminUploadModal({
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">3. AI 활용 고지서 Google Drive URL (선생님/관리자 공개)</label>
+                  <label className="text-slate-400 block mb-1">3. AI 활용 고지서 Google Drive URL (선생님/서포터즈 공개)</label>
                   <input
                     type="text"
                     value={aiUrl}
@@ -259,7 +259,7 @@ export default function AdminUploadModal({
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">4. 개인정보 동의서 Google Drive URL (선생님/관리자 공개)</label>
+                  <label className="text-slate-400 block mb-1">4. 개인정보 동의서 Google Drive URL (선생님/관리자 전용)</label>
                   <input
                     type="text"
                     value={privacyUrl}
