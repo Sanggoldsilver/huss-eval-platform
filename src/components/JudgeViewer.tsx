@@ -111,7 +111,7 @@ export default function JudgeViewer({
     const element = document.getElementById(`submission-card-${submission.id}`);
     if (!element) return;
     try {
-      const canvas = await html2canvas(element, { scale: 2 });
+      const canvas = await html2canvas(element, { scale: 2 } as any);
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
