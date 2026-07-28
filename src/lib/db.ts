@@ -1,21 +1,24 @@
-let _db: any = null;
+// Prisma v7 + @prisma/adapter-pg 방식
+// schema.prisma에 url을 명시하지 않고 PrismaClient 생성자에 어댑터를 직접 주입합니다.
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
-try {
-  const { PrismaClient } = require('@prisma/client');
-  const globalForPrisma = globalThis as unknown as { prisma: any };
-  if (!globalForPrisma.prisma) {
-    globalForPrisma.prisma = new PrismaClient({ log: ['error'] });
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+
+function createPrismaClient() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL 환경변수가 설정되지 않았습니다.');
   }
-  _db = globalForPrisma.prisma;
-} catch {
-  _db = null;
+  const pool = new Pool({ connectionString });
+  const adapter = new PrismaPg(pool);
+  return new PrismaClient({ adapter } as any);
 }
 
-const handler: ProxyHandler<object> = {
-  get(_target, prop) {
-    if (_db) return _db[prop];
-    throw new Error(`DB not connected (accessed: ${String(prop)})`);
-  },
-};
+export const db: PrismaClient =
+  globalForPrisma.prisma ?? createPrismaClient();
 
-export const db: any = new Proxy({}, handler);
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = db;
+}
