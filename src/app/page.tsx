@@ -101,27 +101,24 @@ export default function HomePage() {
     const params = new URLSearchParams(window.location.search);
     const kakaoError = params.get('kakao_error');
     if (kakaoError) {
-      if (kakaoError === 'cancelled') {
-        // 사용자가 취소한 경우는 조용히 처리
-      } else {
+      if (kakaoError !== 'cancelled') {
         alert(`카카오 로그인 오류: ${kakaoError}`);
       }
-      // URL 파라미터 정리
       window.history.replaceState({}, '', '/');
     }
 
-    // 쿠키에서 사용자 정보 읽기 (카카오 콜백 후 자동 로그인)
-    const userCookie = getCookie('huss_user');
-    if (userCookie) {
-      try {
-        const userFromCookie = JSON.parse(userCookie);
-        if (userFromCookie && userFromCookie.id) {
-          setCurrentUser(userFromCookie);
+    // httpOnly 쿠키(huss_token)를 서버에서 검증하여 로그인 상태 복구
+    // 새로고침해도 로그아웃되지 않음
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.user) {
+          setCurrentUser(data.user);
         }
-      } catch {
-        // 쿠키 파싱 실패 시 무시
-      }
-    }
+      })
+      .catch(() => {
+        // 미로그인 상태 — 정상적으로 로그인 화면 표시
+      });
   }, []);
 
   useEffect(() => {
@@ -237,15 +234,16 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-        ) : currentUser.status === 'PENDING' ? (
-          /* 승인 대기자(PENDING) 내부 접근 차단 안내 */
+        ) : !currentUser.role ? (
+          /* 역할 미지정 사용자 — 관리자 역할 부여 대기 안내 */
           <div className="glass-card p-12 text-center my-16 max-w-xl mx-auto border-amber-500/30">
             <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-4 text-amber-400">
               <Lock className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-100 mb-2">관리자 승인 대기 중입니다</h2>
+            <h2 className="text-2xl font-bold text-slate-100 mb-2">역할 배정 대기 중입니다</h2>
             <p className="text-slate-400 text-sm leading-relaxed mb-6">
-              카카오 계정 가입이 완료되었으나, 담당 관리자의 권한 승인(선생님/서포터즈 지정) 후 평가 플랫폼 내부 콘텐츠에 접근하실 수 있습니다.
+              카카오 계정으로 가입이 완료되었습니다.<br />
+              담당 관리자가 선생님 또는 서포터즈 역할을 배정하면 즉시 평가 플랫폼에 접근하실 수 있습니다.
             </p>
             <button
               onClick={async () => {

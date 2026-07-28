@@ -43,31 +43,24 @@ export async function PATCH(req: NextRequest) {
       }
 
       try {
+        // 역할 부여 시 status를 APPROVED로 함께 갱신
         const updatedUser = await db.user.update({
           where: { id: userId },
-          data: {
-            status: 'APPROVED',
-            role,
-            groupType,
-          },
+          data: { status: 'APPROVED', role, groupType },
         });
         return NextResponse.json({ success: true, user: updatedUser });
       } catch (dbErr) {
         console.error('Approve error:', dbErr);
         return NextResponse.json({ success: false, error: 'DB 업데이트 실패' }, { status: 500 });
       }
-    } else if (action === 'REJECT') {
+    } else if (action === 'DELETE') {
+      // 역할 미부여 사용자 삭제
       try {
-        const updatedUser = await db.user.update({
-          where: { id: userId },
-          data: {
-            status: 'REJECTED',
-          },
-        });
-        return NextResponse.json({ success: true, user: updatedUser });
+        await db.user.delete({ where: { id: userId } });
+        return NextResponse.json({ success: true });
       } catch (dbErr) {
-        console.error('Reject error:', dbErr);
-        return NextResponse.json({ success: false, error: 'DB 업데이트 실패' }, { status: 500 });
+        console.error('Delete error:', dbErr);
+        return NextResponse.json({ success: false, error: 'DB 삭제 실패' }, { status: 500 });
       }
     }
 
