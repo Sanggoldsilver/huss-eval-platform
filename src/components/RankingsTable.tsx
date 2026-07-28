@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
-import { Trophy, Award, Medal, Download, TrendingUp, Users, UserCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Trophy, Award, Medal, Download, TrendingUp, Users, UserCheck, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import ScoreChart from './ScoreChart';
 
 interface RankingItem {
   rank: number;
@@ -18,6 +20,13 @@ interface RankingItem {
   finalScore: number;
   businessCount: number;
   supportersCount: number;
+  avgScores?: {
+    problemDefinitionScore: number;
+    visualizationCreativityScore: number;
+    socialValueScore: number;
+    majorUtilizationScore: number;
+    dataAccuracyScore: number;
+  };
 }
 
 interface RankingsTableProps {
@@ -27,6 +36,7 @@ interface RankingsTableProps {
 
 export default function RankingsTable({ rankings, currentUserRole }: RankingsTableProps) {
   const isSupporter = currentUserRole === 'SUPPORTER';
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   const exportToCSV = () => {
     let csvContent = 'data:text/csv;charset=utf-8,순위,작품명,학과,학번,이름,사업단평균(100),사업단50%반영,서포터즈평균(100),서포터즈50%반영,최종합계점수\n';
@@ -87,18 +97,23 @@ export default function RankingsTable({ rankings, currentUserRole }: RankingsTab
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60">
-            {rankings.map((row) => {
+            {rankings.map((row, index) => {
               const isFirst = row.rank === 1;
               const isSecond = row.rank === 2;
               const isThird = row.rank === 3;
+              const isExpanded = expandedRow === row.id;
 
               return (
-                <tr
-                  key={row.id}
-                  className={`hover:bg-slate-900/40 transition ${
-                    isFirst ? 'bg-amber-500/5' : ''
-                  }`}
-                >
+                <React.Fragment key={row.id}>
+                  <motion.tr
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => setExpandedRow(isExpanded ? null : row.id)}
+                    className={`cursor-pointer hover:bg-slate-900/40 transition ${
+                      isFirst ? 'bg-amber-500/5' : ''
+                    }`}
+                  >
                   {/* 순위 아이콘 및 뱃지 */}
                   <td className="py-3 px-3 text-center font-bold">
                     {isFirst && (
@@ -155,10 +170,36 @@ export default function RankingsTable({ rankings, currentUserRole }: RankingsTab
 
                   {/* 최종 합계 */}
                   <td className="py-3 px-4 text-right font-extrabold text-base text-amber-400 font-mono">
-                    {row.finalScore}
-                    <span className="text-xs text-slate-500 font-normal ml-0.5">점</span>
+                    <div className="flex items-center justify-end gap-2">
+                      {row.finalScore}
+                      <span className="text-xs text-slate-500 font-normal">점</span>
+                      {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                    </div>
                   </td>
-                </tr>
+                  </motion.tr>
+                  
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.tr
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-slate-900/20 border-b border-slate-800"
+                      >
+                        <td colSpan={7} className="py-4 px-6 overflow-hidden">
+                          <div className="text-slate-300 font-medium mb-3 text-sm">부문별 상세 평균 점수 분포</div>
+                          <ScoreChart scores={row.avgScores || {
+                            problemDefinitionScore: 25,
+                            visualizationCreativityScore: 25,
+                            socialValueScore: 12,
+                            majorUtilizationScore: 12,
+                            dataAccuracyScore: 8,
+                          }} />
+                        </td>
+                      </motion.tr>
+                    )}
+                  </AnimatePresence>
+                </React.Fragment>
               );
             })}
           </tbody>

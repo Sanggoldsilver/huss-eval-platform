@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { mockStore } from '@/lib/mockStore';
-
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
@@ -40,43 +38,23 @@ export async function POST(req: NextRequest) {
 
     const totalScore = pScore + vScore + sScore + mScore + dScore;
 
-    try {
-      const evaluation = await db.evaluation.upsert({
-        where: {
-          submissionId_evaluatorId: {
-            submissionId,
-            evaluatorId,
-          },
-        },
-        update: {
-          problemDefinitionScore: pScore,
-          visualizationCreativityScore: vScore,
-          socialValueScore: sScore,
-          majorUtilizationScore: mScore,
-          dataAccuracyScore: dScore,
-          comment: comment || '',
-          totalScore,
-        },
-        create: {
+    const evaluation = await db.evaluation.upsert({
+      where: {
+        submissionId_evaluatorId: {
           submissionId,
           evaluatorId,
-          problemDefinitionScore: pScore,
-          visualizationCreativityScore: vScore,
-          socialValueScore: sScore,
-          majorUtilizationScore: mScore,
-          dataAccuracyScore: dScore,
-          comment: comment || '',
-          totalScore,
         },
-      });
-      return NextResponse.json({ success: true, evaluation });
-    } catch (dbErr) {
-      const existingIdx = mockStore.evaluations.findIndex(
-        (e) => e.submissionId === submissionId && e.evaluatorId === evaluatorId
-      );
-
-      const evalData = {
-        id: `eval_${Date.now()}`,
+      },
+      update: {
+        problemDefinitionScore: pScore,
+        visualizationCreativityScore: vScore,
+        socialValueScore: sScore,
+        majorUtilizationScore: mScore,
+        dataAccuracyScore: dScore,
+        comment: comment || '',
+        totalScore,
+      },
+      create: {
         submissionId,
         evaluatorId,
         problemDefinitionScore: pScore,
@@ -86,17 +64,9 @@ export async function POST(req: NextRequest) {
         dataAccuracyScore: dScore,
         comment: comment || '',
         totalScore,
-        createdAt: new Date(),
-      };
-
-      if (existingIdx >= 0) {
-        mockStore.evaluations[existingIdx] = evalData;
-      } else {
-        mockStore.evaluations.push(evalData);
-      }
-
-      return NextResponse.json({ success: true, evaluation: evalData });
-    }
+      },
+    });
+    return NextResponse.json({ success: true, evaluation });
   } catch (error) {
     console.error('Submit Evaluation Error:', error);
     return NextResponse.json(

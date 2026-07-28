@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { anonymizeSubmissionForSupporter } from '@/lib/auth';
-import { mockStore } from '@/lib/mockStore';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,40 +9,18 @@ export async function GET(req: NextRequest) {
     const role = req.headers.get('x-user-role') || null;
     const evaluatorId = req.headers.get('x-user-id');
 
-    let submissions: any[] = [];
-
-    try {
-      submissions = await db.submission.findMany({
-        include: {
-          evaluations: {
-            include: {
-              evaluator: {
-                select: { id: true, name: true, role: true, groupType: true },
-              },
+    const submissions = await db.submission.findMany({
+      include: {
+        evaluations: {
+          include: {
+            evaluator: {
+              select: { id: true, name: true, role: true, groupType: true },
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
-      });
-    } catch (dbErr) {
-      submissions = mockStore.submissions.map((sub) => {
-        const evals = mockStore.evaluations
-          .filter((e) => e.submissionId === sub.id)
-          .map((e) => {
-            const user = mockStore.users.find((u) => u.id === e.evaluatorId);
-            return {
-              ...e,
-              evaluator: {
-                id: user?.id || e.evaluatorId,
-                name: user?.name || '평가자',
-                role: user?.role || 'TEACHER',
-                groupType: user?.groupType || 'BUSINESS_TEAM',
-              },
-            };
-          });
-        return { ...sub, evaluations: evals };
-      });
-    }
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
     const formattedSubmissions = submissions.map((sub: any) => {
       const anonymized = anonymizeSubmissionForSupporter(sub, role);
@@ -112,25 +89,20 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
     };
 
-    try {
-      const newSubmission = await db.submission.create({
-        data: {
-          title: newSubData.title,
-          studentName: newSubData.studentName,
-          studentId: newSubData.studentId,
-          department: newSubData.department,
-          summary: newSubData.summary,
-          applicationFileUrl: newSubData.applicationFileUrl,
-          resultFileUrl: newSubData.resultFileUrl,
-          aiSourceFileUrl: newSubData.aiSourceFileUrl,
-          privacyAgreementFileUrl: newSubData.privacyAgreementFileUrl,
-        },
-      });
-      return NextResponse.json({ success: true, submission: newSubmission });
-    } catch (dbErr) {
-      mockStore.submissions.unshift(newSubData);
-      return NextResponse.json({ success: true, submission: newSubData });
-    }
+    const newSubmission = await db.submission.create({
+      data: {
+        title: newSubData.title,
+        studentName: newSubData.studentName,
+        studentId: newSubData.studentId,
+        department: newSubData.department,
+        summary: newSubData.summary,
+        applicationFileUrl: newSubData.applicationFileUrl,
+        resultFileUrl: newSubData.resultFileUrl,
+        aiSourceFileUrl: newSubData.aiSourceFileUrl,
+        privacyAgreementFileUrl: newSubData.privacyAgreementFileUrl,
+      },
+    });
+    return NextResponse.json({ success: true, submission: newSubmission });
   } catch (error) {
     console.error('Create Submission Error:', error);
     return NextResponse.json(
@@ -158,21 +130,10 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    try {
-      // 연결된 평가 먼저 삭제 후 제출작 삭제
-      await db.evaluation.deleteMany({ where: { submissionId } });
-      await db.submission.delete({ where: { id: submissionId } });
-      return NextResponse.json({ success: true });
-    } catch (dbErr) {
-      // MockStore 폴백 삭제
-      mockStore.evaluations = mockStore.evaluations.filter(
-        (e) => e.submissionId !== submissionId
-      );
-      mockStore.submissions = mockStore.submissions.filter(
-        (s) => s.id !== submissionId
-      );
-      return NextResponse.json({ success: true });
-    }
+    // 연결된 평가 먼저 삭제 후 제출작 삭제
+    await db.evaluation.deleteMany({ where: { submissionId } });
+    await db.submission.delete({ where: { id: submissionId } });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete Submission Error:', error);
     return NextResponse.json(

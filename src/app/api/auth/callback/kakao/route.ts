@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signToken } from '@/lib/auth';
-import { mockStore } from '@/lib/mockStore';
 import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -72,40 +71,20 @@ export async function GET(req: NextRequest) {
     const name = profile?.nickname || '카카오 사용자';
     const email = kakaoData.kakao_account?.email || null;
 
-    // 3. DB 또는 MockStore에서 사용자 조회/생성
-    let user: any = null;
-    try {
-      user = await db.user.findUnique({ where: { kakaoId } });
-      if (!user) {
-        user = await db.user.create({
-          data: {
-            kakaoId,
-            name,
-            email,
-            status: 'PENDING',
-            role: null,
-            groupType: null,
-          },
-        });
-      }
-    } catch {
-      // DB 미연결 → MockStore 폴백
-      user = mockStore.users.find((u) => u.kakaoId === kakaoId);
-      if (!user) {
-        user = {
-          id: `user_${Date.now()}`,
+    // 3. DB에서 사용자 조회/생성
+    let user = await db.user.findUnique({ where: { kakaoId } });
+    if (!user) {
+      user = await db.user.create({
+        data: {
           kakaoId,
           name,
           email,
           status: 'PENDING',
           role: null,
           groupType: null,
-          createdAt: new Date(),
-        };
-        mockStore.users.push(user);
-      }
+        },
+      });
     }
-
     // 4. JWT 토큰 발급
     const jwtToken = signToken({
       userId: user.id,

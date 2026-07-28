@@ -1,6 +1,7 @@
 /**
  * Google Drive URL 파싱 및 iframe preview URL 자동 변환 유틸리티
  */
+import { google } from '@googleapis/drive';
 
 export function getDrivePreviewUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -29,4 +30,46 @@ export function getDrivePreviewUrl(url: string | null | undefined): string | nul
 export function isGoogleDriveUrl(url: string | null | undefined): boolean {
   if (!url) return false;
   return url.includes('drive.google.com');
+}
+
+/**
+ * Google Drive API를 통한 파일 업로드
+ * (서버 환경에서만 실행 가능)
+ */
+export async function uploadToGoogleDrive(fileName: string, mimeType: string, fileStream: any) {
+  const auth = new google.auth.GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
+  });
+  const drive = google.drive({ version: 'v3', auth });
+  
+  const response = await drive.files.create({
+    requestBody: {
+      name: fileName,
+      mimeType: mimeType,
+    },
+    media: {
+      mimeType: mimeType,
+      body: fileStream,
+    },
+  });
+  
+  return response.data;
+}
+
+/**
+ * Google Drive API를 통한 파일 링크 조회
+ * (서버 환경에서만 실행 가능)
+ */
+export async function getDriveFileLink(fileId: string) {
+  const auth = new google.auth.GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+  });
+  const drive = google.drive({ version: 'v3', auth });
+  
+  const response = await drive.files.get({
+    fileId: fileId,
+    fields: 'webViewLink, webContentLink',
+  });
+  
+  return response.data;
 }

@@ -1,47 +1,24 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { calculateWeightedScores } from '@/lib/calculator';
-import { mockStore } from '@/lib/mockStore';
-
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    let submissions: any[] = [];
-
-    try {
-      submissions = await db.submission.findMany({
-        include: {
-          evaluations: {
-            include: {
-              evaluator: {
-                select: {
-                  groupType: true,
-                  role: true,
-                },
+    const submissions = await db.submission.findMany({
+      include: {
+        evaluations: {
+          include: {
+            evaluator: {
+              select: {
+                groupType: true,
+                role: true,
               },
             },
           },
         },
-      });
-    } catch (dbErr) {
-      submissions = mockStore.submissions.map((sub) => {
-        const evals = mockStore.evaluations
-          .filter((e) => e.submissionId === sub.id)
-          .map((e) => {
-            const user = mockStore.users.find((u) => u.id === e.evaluatorId);
-            return {
-              ...e,
-              evaluator: {
-                groupType: user?.groupType || 'BUSINESS_TEAM',
-                role: user?.role || 'TEACHER',
-              },
-            };
-          });
-        return { ...sub, evaluations: evals };
-      });
-    }
-
+      },
+    });
     const rankedSubmissions = submissions.map((sub: any) => {
       const scoreSummary = calculateWeightedScores(sub.evaluations || []);
       return {

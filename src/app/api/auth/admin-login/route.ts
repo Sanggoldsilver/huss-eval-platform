@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { signToken } from '@/lib/auth';
-import { mockStore } from '@/lib/mockStore';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,37 +16,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let adminUser: any = null;
-
-    try {
-      adminUser = await db.user.upsert({
-        where: { kakaoId: 'admin_smuhuss4th_master' },
-        update: {
-          status: 'APPROVED',
-          role: 'ADMIN',
-          groupType: 'BUSINESS_TEAM',
-        },
-        create: {
-          kakaoId: 'admin_smuhuss4th_master',
-          name: 'HUSS 총괄 관리자',
-          email: 'smuhuss4th@huss.ac.kr',
-          status: 'APPROVED',
-          role: 'ADMIN',
-          groupType: 'BUSINESS_TEAM',
-        },
-      });
-    } catch (dbErr) {
-      adminUser = mockStore.users.find((u) => u.role === 'ADMIN') || {
-        id: 'admin_smuhuss4th_master',
+    const adminUser = await db.user.upsert({
+      where: { kakaoId: 'admin_smuhuss4th_master' },
+      update: {
+        status: 'APPROVED',
+        role: 'ADMIN',
+        groupType: 'BUSINESS_TEAM',
+      },
+      create: {
         kakaoId: 'admin_smuhuss4th_master',
-        name: 'HUSS 총괄 관리자 (smuhuss4th)',
+        name: 'HUSS 총괄 관리자',
         email: 'smuhuss4th@huss.ac.kr',
         status: 'APPROVED',
         role: 'ADMIN',
         groupType: 'BUSINESS_TEAM',
-        createdAt: new Date(),
-      };
-    }
+      },
+    });
 
     const token = signToken({
       userId: adminUser.id,

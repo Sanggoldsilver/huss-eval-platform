@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { mockStore } from '@/lib/mockStore';
-
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    let users: any[] = [];
-    try {
-      users = await db.user.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
-    } catch (dbErr) {
-      users = mockStore.users;
-    }
+    const users = await db.user.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
     return NextResponse.json({ success: true, users });
   } catch (error) {
     return NextResponse.json(
@@ -60,13 +53,8 @@ export async function PATCH(req: NextRequest) {
         });
         return NextResponse.json({ success: true, user: updatedUser });
       } catch (dbErr) {
-        const targetUser = mockStore.users.find((u) => u.id === userId);
-        if (targetUser) {
-          targetUser.status = 'APPROVED';
-          targetUser.role = role;
-          targetUser.groupType = groupType;
-        }
-        return NextResponse.json({ success: true, user: targetUser });
+        console.error('Approve error:', dbErr);
+        return NextResponse.json({ success: false, error: 'DB 업데이트 실패' }, { status: 500 });
       }
     } else if (action === 'REJECT') {
       try {
@@ -78,11 +66,8 @@ export async function PATCH(req: NextRequest) {
         });
         return NextResponse.json({ success: true, user: updatedUser });
       } catch (dbErr) {
-        const targetUser = mockStore.users.find((u) => u.id === userId);
-        if (targetUser) {
-          targetUser.status = 'REJECTED';
-        }
-        return NextResponse.json({ success: true, user: targetUser });
+        console.error('Reject error:', dbErr);
+        return NextResponse.json({ success: false, error: 'DB 업데이트 실패' }, { status: 500 });
       }
     }
 

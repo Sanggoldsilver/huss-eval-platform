@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, CheckCircle2, Eye, EyeOff, FileText, Lock, Send, AlertTriangle } from 'lucide-react';
+import { ExternalLink, CheckCircle2, Eye, EyeOff, FileText, Lock, Send, AlertTriangle, Download, Share2 } from 'lucide-react';
 import { getDrivePreviewUrl } from '@/lib/drive';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { shareToKakao } from '@/lib/kakao';
+import ScoreChart from './ScoreChart';
 
 interface SubmissionData {
   id: string;
@@ -103,8 +107,32 @@ export default function JudgeViewer({
     }
   };
 
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById(`submission-card-${submission.id}`);
+    if (!element) return;
+    try {
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${submission.title}_심사결과.pdf`);
+    } catch (error) {
+      console.error('PDF 다운로드 실패:', error);
+      alert('PDF 다운로드에 실패했습니다.');
+    }
+  };
+
+  const handleShareKakao = () => {
+    shareToKakao(
+      `심사 결과: ${submission.title}`,
+      `총점: ${totalScore}점 - HUSS AI 활용 인문사회 시각화 공모전`
+    );
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 my-6">
+    <div id={`submission-card-${submission.id}`} className="grid grid-cols-1 lg:grid-cols-12 gap-6 my-6">
       {/* 왼쪽: 심사 자료 & Google Drive 미리보기 (7 columns) */}
       <div className="lg:col-span-7 flex flex-col gap-4">
         <div className="glass-card p-5">
@@ -243,6 +271,16 @@ export default function JudgeViewer({
               <span className="text-xs text-slate-500"> / 100점</span>
             </div>
           </div>
+          
+          <div className="mb-6">
+            <ScoreChart scores={{
+              problemDefinitionScore: pScore,
+              visualizationCreativityScore: vScore,
+              socialValueScore: sScore,
+              majorUtilizationScore: mScore,
+              dataAccuracyScore: dScore,
+            }} />
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             {/* 1. 문제인식 및 주제 적절성 (30점) */}
@@ -368,6 +406,25 @@ export default function JudgeViewer({
                 ✓ 심사 채점이 성공적으로 저장되었습니다.
               </p>
             )}
+
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={handleDownloadPDF}
+                className="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium transition flex items-center justify-center gap-2 border border-slate-700"
+              >
+                <Download className="w-4 h-4" />
+                PDF 다운로드
+              </button>
+              <button
+                type="button"
+                onClick={handleShareKakao}
+                className="flex-1 py-2 px-3 rounded-lg bg-[#FEE500] hover:bg-[#FEE500]/90 text-black text-sm font-bold transition flex items-center justify-center gap-2"
+              >
+                <Share2 className="w-4 h-4" />
+                카카오톡 공유
+              </button>
+            </div>
           </form>
         </div>
       </div>
