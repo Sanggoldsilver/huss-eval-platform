@@ -16,30 +16,20 @@ export default function KakaoLoginModal({
   if (!isOpen) return null;
 
   const handleKakaoLogin = () => {
-    // Kakao JS SDK를 통한 OAuth 인가 코드 방식 로그인
-    if (typeof window === 'undefined') return;
-
-    const kakao = (window as any).Kakao;
-
-    if (kakao && kakao.isInitialized()) {
-      // Kakao JS SDK 초기화 완료 시 SDK 방식으로 로그인
-      const redirectUri = `${window.location.origin}/api/auth/callback/kakao`;
-      kakao.Auth.authorize({ redirectUri });
-    } else {
-      // SDK 미초기화 시 REST API 방식으로 폴백
-      const clientId = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
-      if (!clientId) {
-        alert('카카오 REST API 키가 설정되지 않았습니다.');
-        return;
-      }
-      const redirectUri = `${window.location.origin}/api/auth/callback/kakao`;
-      const kakaoAuthUrl =
-        `https://kauth.kakao.com/oauth/authorize` +
-        `?client_id=${clientId}` +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-        `&response_type=code`;
-      window.location.href = kakaoAuthUrl;
+    // REST API 키 기반 OAuth URL 방식 — SDK authorize()는 KOE101 발생 가능성이 있어 사용하지 않음
+    // Kakao SDK(window.Kakao)는 init/share 기능에만 사용
+    const restApiKey = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
+    if (!restApiKey) {
+      alert('카카오 REST API 키가 설정되지 않았습니다.');
+      return;
     }
+    const redirectUri = `${window.location.origin}/api/auth/callback/kakao`;
+    const kakaoAuthUrl =
+      `https://kauth.kakao.com/oauth/authorize` +
+      `?client_id=${restApiKey}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=code`;
+    window.location.href = kakaoAuthUrl;
   };
 
   return (
