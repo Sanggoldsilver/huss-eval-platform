@@ -247,7 +247,30 @@ export default function HomePage() {
             <p className="text-slate-400 text-sm leading-relaxed mb-6">
               카카오 계정 가입이 완료되었으나, 담당 관리자의 권한 승인(선생님/서포터즈 지정) 후 평가 플랫폼 내부 콘텐츠에 접근하실 수 있습니다.
             </p>
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/auth/me');
+                  const data = await res.json();
+                  if (data.success && data.user) {
+                    setCurrentUser(data.user);
+                    if (data.user.status === 'PENDING') {
+                      alert('아직 승인 대기 중입니다. 관리자에게 문의하세요.');
+                    }
+                  } else {
+                    alert('승인 상태 확인에 실패했습니다. 카카오 로그인을 다시 시도해 주십시오.');
+                  }
+                } catch {
+                  alert('네트워크 오류가 발생했습니다.');
+                }
+              }}
+              className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-all active:scale-95 flex items-center gap-2 mx-auto"
+            >
+              <RefreshCw className="w-4 h-4" />
+              승인 완료 후 여기를 클릭하세요
+            </button>
           </div>
+
         ) : (
           /* 로그인 승인 완료 사용자만 내부 콘텐츠 렌더링 */
           <>
