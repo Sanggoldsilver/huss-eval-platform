@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSessionUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,11 @@ async function fetchDriveFile(fileId: string) {
 }
 
 export async function GET(req: NextRequest) {
+  const session = getSessionUser(req);
+  if (!session) {
+    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+  }
+
   const url = req.nextUrl.searchParams.get('url');
   if (!url) {
     return NextResponse.json({ error: 'url 파라미터가 필요합니다.' }, { status: 400 });

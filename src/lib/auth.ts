@@ -1,6 +1,14 @@
 import jwt from 'jsonwebtoken';
+import type { NextRequest } from 'next/server';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'huss_secret_jwt_key_2026_super_secure';
+// 하드코딩된 폴백 없이, 미설정 시 사용 시점에 바로 실패하도록 지연 평가합니다.
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET 환경변수가 설정되지 않았습니다.');
+  }
+  return secret;
+}
 
 export interface TokenPayload {
   userId: string;
@@ -12,15 +20,26 @@ export interface TokenPayload {
 }
 
 export function signToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
 }
 
 export function verifyToken(token: string): TokenPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as TokenPayload;
+    return jwt.verify(token, getJwtSecret()) as TokenPayload;
   } catch (error) {
     return null;
   }
+}
+
+/**
+ * 요청의 huss_token 쿠키를 서버에서 검증해 세션 사용자 정보를 반환합니다.
+ * 클라이언트가 보내는 x-user-id/x-user-role 헤더는 조작 가능하므로 신뢰하지 않고,
+ * 모든 API 라우트는 반드시 이 함수를 통해서만 인증/인가를 판단해야 합니다.
+ */
+export function getSessionUser(req: NextRequest): TokenPayload | null {
+  const token = req.cookies.get('huss_token')?.value;
+  if (!token) return null;
+  return verifyToken(token);
 }
 
 /**

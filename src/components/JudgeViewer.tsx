@@ -142,7 +142,6 @@ export default function JudgeViewer({
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': currentUserId,
         },
         body: JSON.stringify({ submissionId: submission.id }),
       });

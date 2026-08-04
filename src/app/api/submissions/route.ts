@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { anonymizeSubmissionForSupporter } from '@/lib/auth';
+import { anonymizeSubmissionForSupporter, getSessionUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const session = getSessionUser(req);
+  if (!session) {
+    return NextResponse.json({ success: false, error: '로그인이 필요합니다.' }, { status: 401 });
+  }
+
   try {
-    const role = req.headers.get('x-user-role') || null;
-    const evaluatorId = req.headers.get('x-user-id');
+    const role = session.role;
+    const evaluatorId = session.userId;
 
     const submissions = await db.submission.findMany({
       include: {
@@ -46,15 +51,15 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const role = req.headers.get('x-user-role');
-    if (role !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, error: '오직 관리자 계정만 자료를 등록할 수 있습니다.' },
-        { status: 403 }
-      );
-    }
+  const session = getSessionUser(req);
+  if (!session || session.role !== 'ADMIN') {
+    return NextResponse.json(
+      { success: false, error: '오직 관리자 계정만 자료를 등록할 수 있습니다.' },
+      { status: 403 }
+    );
+  }
 
+  try {
     const body = await req.json();
     const {
       title,
@@ -75,31 +80,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newSubData = {
-      id: `sub_${Date.now()}`,
-      title,
-      studentName: studentName || '',
-      studentId: studentId || '',
-      department: department || '',
-      summary: summary || null,
-      applicationFileUrl: applicationFileUrl || null,
-      resultFileUrl,
-      aiSourceFileUrl: aiSourceFileUrl || null,
-      privacyAgreementFileUrl: privacyAgreementFileUrl || null,
-      createdAt: new Date(),
-    };
-
     const newSubmission = await db.submission.create({
       data: {
-        title: newSubData.title,
-        studentName: newSubData.studentName,
-        studentId: newSubData.studentId,
-        department: newSubData.department,
-        summary: newSubData.summary,
-        applicationFileUrl: newSubData.applicationFileUrl,
-        resultFileUrl: newSubData.resultFileUrl,
-        aiSourceFileUrl: newSubData.aiSourceFileUrl,
-        privacyAgreementFileUrl: newSubData.privacyAgreementFileUrl,
+        title,
+        studentName: studentName || '',
+        studentId: studentId || '',
+        department: department || '',
+        summary: summary || null,
+        applicationFileUrl: applicationFileUrl || null,
+        resultFileUrl,
+        aiSourceFileUrl: aiSourceFileUrl || null,
+        privacyAgreementFileUrl: privacyAgreementFileUrl || null,
       },
     });
     return NextResponse.json({ success: true, submission: newSubmission });
@@ -113,15 +104,15 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  try {
-    const role = req.headers.get('x-user-role');
-    if (role !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, error: '오직 관리자 계정만 작품을 삭제할 수 있습니다.' },
-        { status: 403 }
-      );
-    }
+  const session = getSessionUser(req);
+  if (!session || session.role !== 'ADMIN') {
+    return NextResponse.json(
+      { success: false, error: '오직 관리자 계정만 작품을 삭제할 수 있습니다.' },
+      { status: 403 }
+    );
+  }
 
+  try {
     const { submissionId } = await req.json();
     if (!submissionId) {
       return NextResponse.json(

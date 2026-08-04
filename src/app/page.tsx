@@ -63,17 +63,8 @@ export default function HomePage() {
 
     setLoading(true);
     try {
-      await fetch('/api/seed', { method: 'POST' });
-
-      // 유저 롤이 없는 경우 기본 SUPPORTER로 열람 허용
-      const effectiveRole = userOverride?.role || 'SUPPORTER';
-
-      const subRes = await fetch('/api/submissions', {
-        headers: {
-          'x-user-role': effectiveRole,
-          'x-user-id': userOverride?.id || '',
-        },
-      });
+      // 서버가 huss_token 쿠키로 신원/역할을 검증하므로 클라이언트에서 role/id를 별도로 보낼 필요가 없습니다.
+      const subRes = await fetch('/api/submissions');
       const subData = await subRes.json();
       if (subData.success) {
         setSubmissions(subData.submissions || []);
@@ -186,7 +177,6 @@ export default function HomePage() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-user-id': currentUser.id,
       },
       body: JSON.stringify(evaluationData),
     });

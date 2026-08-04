@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getSessionUser } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 // 점수 저장 (임시 저장 - 최종 확정 전까지 수정 가능)
 export async function POST(req: NextRequest) {
   try {
-    const evaluatorId = req.headers.get('x-user-id');
+    const session = getSessionUser(req);
+    const evaluatorId = session?.userId;
     if (!evaluatorId) {
       return NextResponse.json(
         { success: false, error: '인증되지 않은 사용자입니다.' },
@@ -94,7 +96,8 @@ export async function POST(req: NextRequest) {
 // 점수 최종 확정 (확정 후 수정 불가)
 export async function PATCH(req: NextRequest) {
   try {
-    const evaluatorId = req.headers.get('x-user-id');
+    const session = getSessionUser(req);
+    const evaluatorId = session?.userId;
     if (!evaluatorId) {
       return NextResponse.json(
         { success: false, error: '인증되지 않은 사용자입니다.' },

@@ -59,7 +59,6 @@ export default function AdminUploadModal({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-role': 'ADMIN',
         },
         body: JSON.stringify({
           title,
@@ -98,7 +97,6 @@ export default function AdminUploadModal({
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-role': 'ADMIN',
         },
         body: JSON.stringify({ submissionId }),
       });

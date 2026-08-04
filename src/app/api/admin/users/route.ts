@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getSessionUser } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const session = getSessionUser(req);
+  if (!session || session.role !== 'ADMIN') {
+    return NextResponse.json({ success: false, error: '관리자만 조회할 수 있습니다.' }, { status: 403 });
+  }
+
   try {
     const users = await db.user.findMany({
       orderBy: { createdAt: 'desc' },
@@ -17,6 +23,11 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  const session = getSessionUser(req);
+  if (!session || session.role !== 'ADMIN') {
+    return NextResponse.json({ success: false, error: '관리자만 처리할 수 있습니다.' }, { status: 403 });
+  }
+
   try {
     const { userId, action, selectedRole } = await req.json();
 
