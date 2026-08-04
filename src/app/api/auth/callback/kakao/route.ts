@@ -79,9 +79,9 @@ export async function GET(req: NextRequest) {
           kakaoId,
           name,
           email,
-          status: 'PENDING',
-          role: null,
-          groupType: null,
+          status: 'APPROVED',
+          role: 'SUPPORTER',
+          groupType: '서포터즈',
         },
       });
     }
