@@ -47,6 +47,7 @@ model Evaluation {
   dataAccuracyScore            Int        // 5. 데이터 표현의 정확성 (배점 10점)
   comment                      String?    // 심사위원 단평
   totalScore                   Int        // 총점 (최대 100점)
+  isFinalized                  Boolean    @default(false)  // 최종 확정 여부 (확정 후 수정 불가)
   createdAt                    DateTime   @default(now())
   updatedAt                    DateTime   @updatedAt
 

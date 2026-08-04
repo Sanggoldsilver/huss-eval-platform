@@ -55,8 +55,13 @@ export default function JudgeViewer({
   const [mScore, setMScore] = useState<number>(12); // 소속전공활용 (15)
   const [dScore, setDScore] = useState<number>(8);  // 데이터정확성 (10)
   const [comment, setComment] = useState<string>('');
+  
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [submittedSuccess, setSubmittedSuccess] = useState<boolean>(false);
+
+  // 확정 워크플로우 상태
+  const [isFinalized, setIsFinalized] = useState<boolean>(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
   // 기존 본인 채점 내역이 있으면 로드
   useEffect(() => {
@@ -69,6 +74,9 @@ export default function JudgeViewer({
         setMScore(myEval.majorUtilizationScore);
         setDScore(myEval.dataAccuracyScore);
         setComment(myEval.comment || '');
+        if (myEval.isFinalized) {
+          setIsFinalized(true);
+        }
       }
     }
   }, [submission, currentUserId]);
@@ -83,8 +91,8 @@ export default function JudgeViewer({
 
   const previewUrl = getDrivePreviewUrl(targetUrl);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleTempSave = async () => {
+    if (isFinalized) return;
     setSubmitting(true);
     setSubmittedSuccess(false);
 
@@ -101,7 +109,45 @@ export default function JudgeViewer({
       setSubmittedSuccess(true);
       setTimeout(() => setSubmittedSuccess(false), 3000);
     } catch (err) {
-      alert('채점 제출 중 오류가 발생했습니다.');
+      alert('임시 저장 중 오류가 발생했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFinalSubmit = async () => {
+    if (isFinalized) return;
+    setSubmitting(true);
+    try {
+      // 1. 점수 저장
+      await onSubmitEvaluation({
+        submissionId: submission.id,
+        problemDefinitionScore: pScore,
+        visualizationCreativityScore: vScore,
+        socialValueScore: sScore,
+        majorUtilizationScore: mScore,
+        dataAccuracyScore: dScore,
+        comment,
+      });
+
+      // 2. 최종 확정 PATCH
+      const res = await fetch('/api/evaluations', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUserId,
+        },
+        body: JSON.stringify({ submissionId: submission.id }),
+      });
+
+      if (!res.ok) {
+        throw new Error('최종 확정 실패');
+      }
+
+      setIsFinalized(true);
+      setShowConfirmModal(false);
+    } catch (err) {
+      alert('최종 확정 중 오류가 발생했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -132,55 +178,87 @@ export default function JudgeViewer({
   };
 
   return (
-    <div id={`submission-card-${submission.id}`} className="grid grid-cols-1 lg:grid-cols-12 gap-6 my-6">
+    <div id={`submission-card-${submission.id}`} className="grid grid-cols-1 lg:grid-cols-12 gap-6 my-6 relative">
+      {/* 확인 모달 */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600" />
+              최종 확정 제출
+            </h3>
+            <p className="text-sm text-gray-700 mb-6">
+              정말 이대로 하시겠습니까? 확정 후에는 수정이 불가합니다.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium text-sm transition"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleFinalSubmit}
+                disabled={submitting}
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-bold text-sm transition flex items-center gap-2"
+              >
+                {submitting ? '처리 중...' : '저장'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 왼쪽: 심사 자료 & Google Drive 미리보기 (7 columns) */}
       <div className="lg:col-span-7 flex flex-col gap-4">
         <div className="glass-card p-5">
           <div className="flex items-center justify-between gap-4 mb-3">
             <div>
-              <span className="text-xs text-blue-400 font-semibold tracking-wider uppercase">
+              <span className="text-xs text-blue-600 font-semibold tracking-wider uppercase">
                 심사 대상 작품
               </span>
-              <h2 className="text-xl font-bold text-slate-100 mt-1">{submission.title}</h2>
+              <h2 className="text-xl font-bold text-gray-900 mt-1">{submission.title}</h2>
             </div>
             {isSupporter && (
-              <span className="text-xs px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+              <span className="text-xs px-2.5 py-1 rounded bg-purple-50 text-purple-600 border border-purple-200 flex items-center gap-1">
                 <EyeOff className="w-3.5 h-3.5" /> 블라인드 심사 적용중
               </span>
             )}
           </div>
 
           {/* 학생 인적사항 정보 (서포터즈 마스킹 적용) */}
-          <div className="grid grid-cols-3 gap-3 p-3 bg-slate-900/90 rounded-lg border border-slate-800 text-xs mb-3">
+          <div className="grid grid-cols-3 gap-3 p-3 bg-gray-100 rounded-lg border border-gray-200 text-xs mb-3">
             <div>
-              <span className="text-slate-500 block">소속 학과</span>
-              <span className="font-semibold text-slate-200">{submission.department}</span>
+              <span className="text-gray-400 block">소속 학과</span>
+              <span className="font-semibold text-gray-800">{submission.department}</span>
             </div>
             <div>
-              <span className="text-slate-500 block">학번</span>
-              <span className="font-semibold text-slate-200">{submission.studentId}</span>
+              <span className="text-gray-400 block">학번</span>
+              <span className="font-semibold text-gray-800">{submission.studentId}</span>
             </div>
             <div>
-              <span className="text-slate-500 block">성명 / 팀명</span>
-              <span className="font-semibold text-slate-200">{submission.studentName}</span>
+              <span className="text-gray-400 block">성명 / 팀명</span>
+              <span className="font-semibold text-gray-800">{submission.studentName}</span>
             </div>
           </div>
 
           {submission.summary && (
-            <p className="text-xs text-slate-300 bg-slate-900/50 p-3 rounded border border-slate-800/80 leading-relaxed mb-3">
-              <span className="font-semibold text-blue-400">결과물 요약: </span>
+            <p className="text-xs text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 leading-relaxed mb-3">
+              <span className="font-semibold text-blue-600">결과물 요약: </span>
               {submission.summary}
             </p>
           )}
 
           {/* 구글 드라이브 서류 탭 4종 */}
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-2 mb-3 overflow-x-auto text-xs">
+          <div className="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3 overflow-x-auto text-xs">
             <button
               onClick={() => setActiveTab('result')}
               className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
                 activeTab === 'result'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+                  : 'bg-gray-50 text-gray-500 hover:text-gray-800 hover:bg-gray-100'
               }`}
             >
               <FileText className="w-3.5 h-3.5" /> 2. 시각화 결과물 (공개)
@@ -191,7 +269,7 @@ export default function JudgeViewer({
               className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
                 activeTab === 'app'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+                  : 'bg-gray-50 text-gray-500 hover:text-gray-800 hover:bg-gray-100'
               }`}
             >
               <FileText className="w-3.5 h-3.5" /> 1. 참가 신청서
@@ -202,7 +280,7 @@ export default function JudgeViewer({
               className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
                 activeTab === 'ai'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+                  : 'bg-gray-50 text-gray-500 hover:text-gray-800 hover:bg-gray-100'
               }`}
             >
               <FileText className="w-3.5 h-3.5" /> 3. AI 출처 고지서
@@ -214,20 +292,20 @@ export default function JudgeViewer({
                 className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
                   activeTab === 'privacy'
                     ? 'bg-blue-600 text-white'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+                    : 'bg-gray-50 text-gray-500 hover:text-gray-800 hover:bg-gray-100'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" /> 4. 개인정보 동의서
               </button>
             ) : (
-              <span className="text-xs text-slate-500 flex items-center gap-1 ml-auto">
-                <Lock className="w-3 h-3 text-amber-500" /> 개인정보 동의서는 서포터즈에 비공개됩니다.
+              <span className="text-xs text-gray-400 flex items-center gap-1 ml-auto">
+                <Lock className="w-3 h-3 text-amber-600" /> 개인정보 동의서는 서포터즈에 비공개됩니다.
               </span>
             )}
           </div>
 
           {/* Google Drive 미리보기 iframe 뷰어 */}
-          <div className="relative w-full h-[520px] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex flex-col items-center justify-center">
+          <div className="relative w-full h-[520px] bg-white rounded-xl overflow-hidden border border-gray-200 flex flex-col items-center justify-center">
             {previewUrl ? (
               <iframe
                 src={previewUrl}
@@ -236,8 +314,8 @@ export default function JudgeViewer({
                 title="Google Drive Preview"
               />
             ) : (
-              <div className="text-center p-6 text-slate-500">
-                <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-amber-500" />
+              <div className="text-center p-6 text-gray-400">
+                <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-amber-600" />
                 미리보기 주소가 연결되지 않았습니다.
               </div>
             )}
@@ -248,7 +326,7 @@ export default function JudgeViewer({
                   href={targetUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs px-3 py-1.5 rounded-lg bg-slate-900/90 text-blue-400 border border-slate-700 hover:bg-slate-800 transition flex items-center gap-1 font-medium shadow-lg"
+                  className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-blue-600 border border-gray-300 hover:bg-gray-200 transition flex items-center gap-1 font-medium shadow-md shadow-blue-100"
                 >
                   Google Drive 원본 열람 <ExternalLink className="w-3 h-3" />
                 </a>
@@ -260,15 +338,22 @@ export default function JudgeViewer({
 
       {/* 오른쪽: 공식 5대 심사 항목 채점표 폼 (5 columns) */}
       <div className="lg:col-span-5">
-        <div className="glass-card p-6 border-blue-500/20">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-            <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-blue-500" /> 공식 5대 심사 채점표
+        <div className="glass-card p-6 border-blue-200 relative">
+          <div className="flex items-center justify-between border-b border-gray-200 pb-3 mb-4">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-blue-600" /> 공식 5대 심사 채점표
             </h3>
-            <div className="text-right">
-              <span className="text-xs text-slate-400 block">채점 총점</span>
-              <span className="text-2xl font-extrabold text-blue-400">{totalScore}</span>
-              <span className="text-xs text-slate-500"> / 100점</span>
+            <div className="flex flex-col items-end gap-1">
+              {isFinalized && (
+                <span className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> 최종 확정 완료
+                </span>
+              )}
+              <div className="text-right">
+                <span className="text-xs text-gray-500 block">채점 총점</span>
+                <span className="text-2xl font-extrabold text-blue-600">{totalScore}</span>
+                <span className="text-xs text-gray-400"> / 100점</span>
+              </div>
             </div>
           </div>
           
@@ -282,128 +367,153 @@ export default function JudgeViewer({
             }} />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <div className="space-y-4 text-xs">
             {/* 1. 문제인식 및 주제 적절성 (30점) */}
-            <div className="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex justify-between items-center mb-1">
-                <label className="font-semibold text-slate-200">
+                <label className="font-semibold text-gray-800">
                   1. 문제인식 및 주제 적절성 (배점 30점)
                 </label>
-                <span className="text-blue-400 font-bold">{pScore}점</span>
+                <span className="text-blue-600 font-bold">{pScore}점</span>
               </div>
-              <p className="text-slate-500 mb-2">메시지가 명확하고 주제가 타당하게 설정되었는가?</p>
+              <p className="text-gray-400 mb-2">메시지가 명확하고 주제가 타당하게 설정되었는가?</p>
               <input
                 type="range"
                 min={0}
                 max={30}
                 value={pScore}
+                disabled={isFinalized}
                 onChange={(e) => setPScore(Number(e.target.value))}
-                className="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                className="w-full accent-blue-600 h-1.5 bg-gray-200 rounded-lg cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
 
             {/* 2. 시각화 전달력 및 AI 활용 창의성 (30점) */}
-            <div className="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex justify-between items-center mb-1">
-                <label className="font-semibold text-slate-200">
+                <label className="font-semibold text-gray-800">
                   2. 시각화 전달력 및 AI 활용 창의성 (배점 30점)
                 </label>
-                <span className="text-blue-400 font-bold">{vScore}점</span>
+                <span className="text-blue-600 font-bold">{vScore}점</span>
               </div>
-              <p className="text-slate-500 mb-2">정보 전달력이 뛰어난 디자인 및 AI 활용 창의성</p>
+              <p className="text-gray-400 mb-2">정보 전달력이 뛰어난 디자인 및 AI 활용 창의성</p>
               <input
                 type="range"
                 min={0}
                 max={30}
                 value={vScore}
+                disabled={isFinalized}
                 onChange={(e) => setVScore(Number(e.target.value))}
-                className="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                className="w-full accent-blue-600 h-1.5 bg-gray-200 rounded-lg cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
 
             {/* 3. 인문사회적 가치 실현도 (15점) */}
-            <div className="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex justify-between items-center mb-1">
-                <label className="font-semibold text-slate-200">
+                <label className="font-semibold text-gray-800">
                   3. 인문사회적 가치 실현도 (배점 15점)
                 </label>
-                <span className="text-blue-400 font-bold">{sScore}점</span>
+                <span className="text-blue-600 font-bold">{sScore}점</span>
               </div>
-              <p className="text-slate-500 mb-2">인문사회적 소양 바탕의 사회적 가치 창출 여부</p>
+              <p className="text-gray-400 mb-2">인문사회적 소양 바탕의 사회적 가치 창출 여부</p>
               <input
                 type="range"
                 min={0}
                 max={15}
                 value={sScore}
+                disabled={isFinalized}
                 onChange={(e) => setSScore(Number(e.target.value))}
-                className="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                className="w-full accent-blue-600 h-1.5 bg-gray-200 rounded-lg cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
 
             {/* 4. 소속 전공 활용도 (15점) */}
-            <div className="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex justify-between items-center mb-1">
-                <label className="font-semibold text-slate-200">
+                <label className="font-semibold text-gray-800">
                   4. 소속 전공 활용도 (배점 15점)
                 </label>
-                <span className="text-blue-400 font-bold">{mScore}점</span>
+                <span className="text-blue-600 font-bold">{mScore}점</span>
               </div>
-              <p className="text-slate-500 mb-2">본인이 소속한 전공 지식의 유기적 적용 여부</p>
+              <p className="text-gray-400 mb-2">본인이 소속한 전공 지식의 유기적 적용 여부</p>
               <input
                 type="range"
                 min={0}
                 max={15}
                 value={mScore}
+                disabled={isFinalized}
                 onChange={(e) => setMScore(Number(e.target.value))}
-                className="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                className="w-full accent-blue-600 h-1.5 bg-gray-200 rounded-lg cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
 
             {/* 5. 데이터 표현의 정확성 (10점) */}
-            <div className="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex justify-between items-center mb-1">
-                <label className="font-semibold text-slate-200">
+                <label className="font-semibold text-gray-800">
                   5. 데이터 표현의 정확성 (배점 10점)
                 </label>
-                <span className="text-blue-400 font-bold">{dScore}점</span>
+                <span className="text-blue-600 font-bold">{dScore}점</span>
               </div>
-              <p className="text-slate-500 mb-2">데이터를 왜곡 없이 정확하게 분석하고 표현했는가?</p>
+              <p className="text-gray-400 mb-2">데이터를 왜곡 없이 정확하게 분석하고 표현했는가?</p>
               <input
                 type="range"
                 min={0}
                 max={10}
                 value={dScore}
+                disabled={isFinalized}
                 onChange={(e) => setDScore(Number(e.target.value))}
-                className="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                className="w-full accent-blue-600 h-1.5 bg-gray-200 rounded-lg cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
 
             {/* 단평 (심사평) */}
             <div>
-              <label className="font-semibold text-slate-300 block mb-1">
+              <label className="font-semibold text-gray-700 block mb-1">
                 심사위원 단평 (종합 의견)
               </label>
               <textarea
                 rows={3}
                 value={comment}
+                readOnly={isFinalized}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="작품에 대한 건설적인 심사평 및 의견을 입력하십시오."
-                className="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 focus:outline-none focus:border-blue-500 resize-none"
+                className="w-full p-2.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-800 focus:outline-none focus:border-blue-500 resize-none read-only:bg-gray-100 read-only:text-gray-500 read-only:cursor-not-allowed"
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2"
-            >
-              <Send className="w-4 h-4" />
-              {submitting ? '제출 중...' : '공식 심사 채점표 제출하기'}
-            </button>
+            {isFinalized ? (
+              <div className="w-full py-3 px-4 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm flex items-center justify-center gap-2 border border-gray-200">
+                <Lock className="w-4 h-4" />
+                이미 최종 확정되었습니다
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleTempSave}
+                  disabled={submitting}
+                  className="flex-1 py-3 px-4 rounded-xl bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-bold text-sm transition flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <Send className="w-4 h-4 text-gray-500" />
+                  {submitting ? '저장 중...' : '임시 저장'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(true)}
+                  disabled={submitting}
+                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-md shadow-blue-100 transition flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  최종 확정 제출
+                </button>
+              </div>
+            )}
 
-            {submittedSuccess && (
-              <p className="text-center text-emerald-400 font-medium animate-pulse">
-                ✓ 심사 채점이 성공적으로 저장되었습니다.
+            {submittedSuccess && !isFinalized && (
+              <p className="text-center text-emerald-600 font-medium animate-pulse">
+                ✓ 임시 저장 완료
               </p>
             )}
 
@@ -411,7 +521,7 @@ export default function JudgeViewer({
               <button
                 type="button"
                 onClick={handleDownloadPDF}
-                className="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium transition flex items-center justify-center gap-2 border border-slate-700"
+                className="flex-1 py-2 px-3 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-800 text-sm font-medium transition flex items-center justify-center gap-2 border border-gray-300 shadow-sm"
               >
                 <Download className="w-4 h-4" />
                 PDF 다운로드
@@ -419,13 +529,13 @@ export default function JudgeViewer({
               <button
                 type="button"
                 onClick={handleShareKakao}
-                className="flex-1 py-2 px-3 rounded-lg bg-[#FEE500] hover:bg-[#FEE500]/90 text-black text-sm font-bold transition flex items-center justify-center gap-2"
+                className="flex-1 py-2 px-3 rounded-lg bg-[#FEE500] hover:bg-[#FEE500]/90 text-black text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm"
               >
                 <Share2 className="w-4 h-4" />
                 카카오톡 공유
               </button>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>

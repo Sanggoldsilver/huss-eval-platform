@@ -43,6 +43,7 @@ export default function HomePage() {
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string>('');
   const [rankings, setRankings] = useState<any[]>([]);
+  const [evaluatorSheets, setEvaluatorSheets] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
   // 모달 제어 상태
@@ -56,6 +57,7 @@ export default function HomePage() {
     if (!userOverride) {
       setSubmissions([]);
       setRankings([]);
+      setEvaluatorSheets([]);
       return;
     }
 
@@ -85,6 +87,7 @@ export default function HomePage() {
       const rankData = await rankRes.json();
       if (rankData.success) {
         setRankings(rankData.rankings || []);
+        setEvaluatorSheets(rankData.evaluatorSheets || []);
       }
     } catch (e) {
       console.error(e);
@@ -165,6 +168,7 @@ export default function HomePage() {
     setCurrentUser(null);
     setSubmissions([]);
     setRankings([]);
+    setEvaluatorSheets([]);
   };
 
   const handleSubmitEvaluation = async (evaluationData: any) => {
@@ -193,7 +197,7 @@ export default function HomePage() {
   const selectedSubmission = submissions.find((s) => s.id === selectedSubmissionId);
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#f8fafc] text-gray-900 flex flex-col">
       {/* 탑 네비게이션 헤더 */}
       <Navbar
         currentUser={currentUser}
@@ -211,8 +215,8 @@ export default function HomePage() {
             <div className="w-20 h-20 rounded-3xl bg-[#0083CD]/10 border border-[#0083CD]/30 flex items-center justify-center mx-auto mb-6 text-[#0083CD]">
               <Lock className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-100 mb-3">HUSS AI 활용 인문사회 시각화 공모전</h2>
-            <p className="text-slate-400 text-sm leading-relaxed mb-8 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">HUSS AI 활용 인문사회 시각화 공모전</h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-8 max-w-md mx-auto">
               본 시스템은 인가된 심사위원 및 사업단 관리자 전용 평가 플랫폼입니다. 내부 심사 자료 및 평가 결과를 열람하시려면 로그인해주십시오.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -236,12 +240,12 @@ export default function HomePage() {
           </div>
         ) : !currentUser.role ? (
           /* 역할 미지정 사용자 — 관리자 역할 부여 대기 안내 */
-          <div className="glass-card p-12 text-center my-16 max-w-xl mx-auto border-amber-500/30">
-            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-4 text-amber-400">
+          <div className="glass-card p-12 text-center my-16 max-w-xl mx-auto border-amber-200">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto mb-4 text-amber-600">
               <Lock className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-100 mb-2">역할 배정 대기 중입니다</h2>
-            <p className="text-slate-400 text-sm leading-relaxed mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">역할 배정 대기 중입니다</h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-6">
               카카오 계정으로 가입이 완료되었습니다.<br />
               담당 관리자가 선생님 또는 서포터즈 역할을 배정하면 즉시 평가 플랫폼에 접근하실 수 있습니다.
             </p>
@@ -278,8 +282,8 @@ export default function HomePage() {
                 <div className="w-16 h-16 rounded-2xl bg-[#0083CD]/10 border border-[#0083CD]/30 flex items-center justify-center mx-auto mb-4 text-[#0083CD]">
                   <AlertCircle className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-100 mb-2">현재 등록된 심사 작품이 없습니다</h3>
-                <p className="text-slate-400 text-xs max-w-lg mx-auto leading-relaxed mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">현재 등록된 심사 작품이 없습니다</h3>
+                <p className="text-gray-500 text-xs max-w-lg mx-auto leading-relaxed mb-6">
                   관리자 계정(smuhuss4th)으로 상단 &ldquo;자료 업로드&rdquo; 버튼을 눌러 심사 대상 작품을 등록해주십시오.
                 </p>
                 {currentUser.role === 'ADMIN' && (
@@ -297,7 +301,7 @@ export default function HomePage() {
                 <div className="glass-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
                     <FileCheck2 className="w-5 h-5 text-[#0083CD]" />
-                    <span className="font-bold text-sm text-slate-200">
+                    <span className="font-bold text-sm text-gray-800">
                       심사 작품 선택 ({submissions.length}개):
                     </span>
                   </div>
@@ -312,7 +316,7 @@ export default function HomePage() {
                           className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
                             isSelected
                               ? 'bg-[#0083CD] text-white shadow-md shadow-[#0083CD]/20'
-                              : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'
+                              : 'bg-gray-100 text-gray-500 border border-gray-200 hover:text-gray-800'
                           }`}
                         >
                           <span>작품 {idx + 1}</span>
@@ -323,7 +327,7 @@ export default function HomePage() {
 
                     <button
                       onClick={() => loadData(currentUser)}
-                      className="p-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-slate-100 border border-slate-800 ml-2"
+                      className="p-1.5 rounded-lg bg-gray-100 text-gray-500 hover:text-gray-900 border border-gray-200 ml-2"
                       title="새로고침"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
@@ -344,7 +348,12 @@ export default function HomePage() {
             )}
 
             {/* 4. 평가 랭킹 종합표 */}
-            <RankingsTable rankings={rankings} currentUserRole={currentUser.role} />
+            <RankingsTable 
+              rankings={rankings} 
+              currentUserRole={currentUser.role} 
+              evaluatorSheets={evaluatorSheets}
+              currentUserId={currentUser.id}
+            />
           </>
         )}
       </main>

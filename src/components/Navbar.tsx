@@ -26,23 +26,23 @@ export default function Navbar({
   onLogout,
 }: NavbarProps) {
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-6 py-4">
+    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur-md px-6 py-4">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         {/* 브랜드 및 로고 (ansim_2_ide 디자인 시스템 #0083CD 블루 포인트 반영) */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0083CD] via-indigo-600 to-purple-600 flex items-center justify-center text-white font-extrabold shadow-lg shadow-[#0083CD]/20">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0083CD] via-indigo-600 to-purple-600 flex items-center justify-center text-white font-extrabold shadow-lg shadow-[#0083CD]/10">
             H
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-slate-100 tracking-tight">
+              <h1 className="text-lg font-bold text-gray-900 tracking-tight">
                 HUSS AI 활용 인문사회 시각화 공모전
               </h1>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#0083CD]/10 text-[#0083CD] border border-[#0083CD]/20 font-semibold">
                 평가 플랫폼
               </span>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-gray-500">
               상명대학교 HUSS 홍보대사 HUGS 4기
             </p>
           </div>
@@ -52,8 +52,8 @@ export default function Navbar({
         <div className="flex items-center gap-3 flex-wrap justify-end">
           {currentUser ? (
             <>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-xs font-semibold text-slate-200">{currentUser.name}</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-50 border border-gray-200">
+                <span className="text-xs font-semibold text-gray-800">{currentUser.name}</span>
 
                 {currentUser.role === 'ADMIN' && (
                   <span className="text-xs px-2 py-0.5 rounded badge-admin flex items-center gap-1">
@@ -88,7 +88,7 @@ export default function Navbar({
                   </button>
                   <button
                     onClick={onOpenUploadModal}
-                    className="text-xs px-3 py-2 rounded-xl bg-[#0083CD] text-white hover:bg-[#0284c7] transition flex items-center gap-1.5 font-semibold shadow-md shadow-[#0083CD]/20"
+                    className="text-xs px-3 py-2 rounded-xl bg-[#0083CD] text-white hover:bg-[#0284c7] transition flex items-center gap-1.5 font-semibold shadow-md shadow-[#0083CD]/10"
                   >
                     <PlusCircle className="w-3.5 h-3.5" /> 자료 업로드
                   </button>
@@ -97,7 +97,7 @@ export default function Navbar({
 
               <button
                 onClick={onLogout}
-                className="text-xs px-3 py-2 rounded-xl bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 transition font-medium"
+                className="text-xs px-3 py-2 rounded-xl bg-gray-50 text-gray-500 hover:text-gray-800 border border-gray-200 transition font-medium"
               >
                 로그아웃
               </button>
@@ -117,7 +117,7 @@ export default function Navbar({
 
               <button
                 onClick={onOpenAdminLoginModal}
-                className="text-xs px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold transition flex items-center gap-1.5 shadow-md shadow-red-600/20"
+                className="text-xs px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold transition flex items-center gap-1.5 shadow-md shadow-red-100"
               >
                 <ShieldCheck className="w-3.5 h-3.5" /> 관리자 로그인
               </button>

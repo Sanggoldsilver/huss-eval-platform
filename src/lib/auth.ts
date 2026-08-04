@@ -39,7 +39,7 @@ export function anonymizeSubmissionForSupporter<T extends {
       ...submission,
       studentName: '블라인드 (익명)',
       studentId: '****',
-      department: '인문사회 계열',
+      // department는 심사 기준 "4. 소속 전공 활용도(배점 15점)" 평가를 위해 마스킹 해제 (원본 유지)
       privacyAgreementFileUrl: null, // 4. 동의서만 비공개
     };
   }

@@ -91,31 +91,31 @@ export default function AdminUserModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-card w-full max-w-3xl p-6 border-red-500/20 max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+    <div className="fixed inset-0 z-50 bg-gray-900/40 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="glass-card w-full max-w-3xl p-6 border-red-200 max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-red-400" />
-            <h3 className="text-lg font-bold text-slate-100">카카오 가입 회원 역할 지정</h3>
+            <ShieldCheck className="w-5 h-5 text-red-600" />
+            <h3 className="text-lg font-bold text-gray-900">카카오 가입 회원 역할 지정</h3>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-100 p-1 rounded-lg hover:bg-slate-800"
+            className="text-gray-500 hover:text-gray-900 p-1 rounded-lg hover:bg-gray-100"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <p className="text-xs text-slate-400 mb-4">
+        <p className="text-xs text-gray-500 mb-4">
           카카오 로그인으로 가입한 회원에게 역할을 지정하면 즉시 플랫폼에 접근할 수 있습니다.
           역할이 필요 없는 회원은 삭제하십시오.
         </p>
 
         <div className="overflow-y-auto flex-1 pr-1 space-y-3">
           {loading ? (
-            <p className="text-xs text-slate-500 text-center py-6">사용자 목록을 불러오는 중...</p>
+            <p className="text-xs text-gray-400 text-center py-6">사용자 목록을 불러오는 중...</p>
           ) : users.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-6">가입된 회원이 없습니다.</p>
+            <p className="text-xs text-gray-400 text-center py-6">가입된 회원이 없습니다.</p>
           ) : (
             users.map((u) => {
               const currentSelectedRole = selectedRoleMap[u.id] || (u.role === 'TEACHER' ? 'TEACHER' : 'SUPPORTER');
@@ -124,34 +124,34 @@ export default function AdminUserModal({
               return (
                 <div
                   key={u.id}
-                  className="p-3.5 bg-slate-900/90 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                  className="p-3.5 bg-gray-100 rounded-xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                 >
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-slate-200">{u.name}</span>
-                      <span className="text-[11px] text-slate-500">({u.email || '이메일 없음'})</span>
+                      <span className="font-bold text-gray-800">{u.name}</span>
+                      <span className="text-[11px] text-gray-400">({u.email || '이메일 없음'})</span>
                       {!hasRole && (
-                        <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">역할 미지정</span>
+                        <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200">역할 미지정</span>
                       )}
                       {u.role === 'TEACHER' && (
-                        <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">선생님 (사업단)</span>
+                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">선생님 (사업단)</span>
                       )}
                       {u.role === 'SUPPORTER' && (
-                        <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30">서포터즈</span>
+                        <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-600 border border-purple-200">서포터즈</span>
                       )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
                     {/* 역할 선택 토글 */}
-                    <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800">
+                    <div className="flex bg-white p-1 rounded-lg border border-gray-200">
                       <button
                         type="button"
                         onClick={() => setSelectedRoleMap((prev) => ({ ...prev, [u.id]: 'TEACHER' }))}
                         className={`px-2.5 py-1 rounded transition text-[11px] flex items-center gap-1 font-medium ${
                           currentSelectedRole === 'TEACHER'
                             ? 'bg-blue-600 text-white font-bold'
-                            : 'text-slate-400 hover:text-slate-200'
+                            : 'text-gray-500 hover:text-gray-800'
                         }`}
                       >
                         <UserCheck className="w-3 h-3" /> 선생님
@@ -162,7 +162,7 @@ export default function AdminUserModal({
                         className={`px-2.5 py-1 rounded transition text-[11px] flex items-center gap-1 font-medium ${
                           currentSelectedRole === 'SUPPORTER'
                             ? 'bg-purple-600 text-white font-bold'
-                            : 'text-slate-400 hover:text-slate-200'
+                            : 'text-gray-500 hover:text-gray-800'
                         }`}
                       >
                         <Users className="w-3 h-3" /> 서포터즈
@@ -172,7 +172,7 @@ export default function AdminUserModal({
                     {/* 역할 지정 버튼 */}
                     <button
                       onClick={() => handleAssignRole(u.id)}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition font-bold flex items-center gap-1 shadow-md shadow-emerald-600/20"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition font-bold flex items-center gap-1 shadow-md shadow-emerald-100"
                     >
                       <Check className="w-3.5 h-3.5" /> {hasRole ? '변경' : '지정'}
                     </button>
@@ -180,7 +180,7 @@ export default function AdminUserModal({
                     {/* 삭제 버튼 */}
                     <button
                       onClick={() => handleDelete(u.id, u.name)}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:bg-red-500/20 hover:text-red-400 transition"
+                      className="px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 transition"
                       title="사용자 삭제"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
