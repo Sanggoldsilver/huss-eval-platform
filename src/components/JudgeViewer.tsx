@@ -222,9 +222,9 @@ export default function JudgeViewer({
         </div>
       )}
 
-      {/* 왼쪽: 심사 자료 & Google Drive 미리보기 (7 columns) */}
-      <div className="lg:col-span-7 flex flex-col gap-4">
-        <div className="glass-card p-5">
+      {/* 왼쪽: 심사 자료 & Google Drive 미리보기 (7 columns, 오른쪽 채점표 패널 높이 기준으로 늘어남) */}
+      <div className="lg:col-span-7 flex flex-col gap-4 lg:h-full">
+        <div className="glass-card p-5 flex flex-col lg:flex-1 lg:min-h-0">
           <div className="flex items-center justify-between gap-4 mb-3">
             <div>
               <span className="text-xs text-blue-600 font-semibold tracking-wider uppercase">
@@ -315,8 +315,8 @@ export default function JudgeViewer({
             )}
           </div>
 
-          {/* Google Drive 미리보기 iframe 뷰어 */}
-          <div className="relative w-full h-[520px] bg-white rounded-xl overflow-hidden border border-gray-200 flex flex-col items-center justify-center">
+          {/* Google Drive 미리보기 iframe 뷰어 (데스크톱에서는 오른쪽 채점표 패널 높이만큼 늘어남) */}
+          <div className="relative w-full h-[520px] lg:h-auto lg:flex-1 lg:min-h-[400px] bg-white rounded-xl overflow-hidden border border-gray-200 flex flex-col items-center justify-center">
             {previewUrl ? (
               <iframe
                 src={previewUrl}

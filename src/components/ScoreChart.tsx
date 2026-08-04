@@ -44,7 +44,7 @@ export default function ScoreChart({ scores }: ScoreChartProps) {
   ];
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 w-full h-[300px]">
+    <div className="flex flex-col md:flex-row gap-4 w-full h-[560px] md:h-[300px]">
       <div className="flex-1 min-w-0 bg-gray-50 rounded-lg p-2">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>

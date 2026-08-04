@@ -173,7 +173,7 @@ export default function AdminUploadModal({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="font-semibold text-gray-600 block mb-1">대표자 / 팀원 성명</label>
                   <input
