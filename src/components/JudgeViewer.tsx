@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, CheckCircle2, Eye, EyeOff, FileText, Lock, Send, AlertTriangle, Download, Share2 } from 'lucide-react';
+import { ExternalLink, CheckCircle2, Eye, EyeOff, FileText, Lock, Send, AlertTriangle, Download, Share2, Play } from 'lucide-react';
 import { getDrivePreviewUrl } from '@/lib/drive';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { shareToKakao } from '@/lib/kakao';
 import ScoreChart from './ScoreChart';
+import LiveExecutionPanel from './LiveExecutionPanel';
 
 interface SubmissionData {
   id: string;
@@ -47,6 +48,12 @@ export default function JudgeViewer({
 
   // 구글 드라이브 미리보기 탭 선택
   const [activeTab, setActiveTab] = useState<'result' | 'app' | 'ai' | 'privacy'>('result');
+
+  // html/py 파일 실제 실행 미리보기
+  const [showLivePreview, setShowLivePreview] = useState<boolean>(false);
+  useEffect(() => {
+    setShowLivePreview(false);
+  }, [activeTab]);
 
   // 공식 5대 항목 점수 상태 (총 100점)
   const [pScore, setPScore] = useState<number>(25); // 문제인식 (30)
@@ -179,6 +186,11 @@ export default function JudgeViewer({
 
   return (
     <div id={`submission-card-${submission.id}`} className="grid grid-cols-1 lg:grid-cols-12 gap-6 my-6 relative">
+      {/* html/py 실행 미리보기 패널 */}
+      {showLivePreview && targetUrl && (
+        <LiveExecutionPanel url={targetUrl} onClose={() => setShowLivePreview(false)} />
+      )}
+
       {/* 확인 모달 */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -321,7 +333,14 @@ export default function JudgeViewer({
             )}
             
             {targetUrl && (
-              <div className="absolute bottom-3 right-3">
+              <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLivePreview(true)}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition flex items-center gap-1 font-medium shadow-md shadow-blue-100"
+                >
+                  <Play className="w-3 h-3" /> 실행해서 보기 (html/py)
+                </button>
                 <a
                   href={targetUrl}
                   target="_blank"
