@@ -66,9 +66,8 @@ export default function JudgeViewer({
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [submittedSuccess, setSubmittedSuccess] = useState<boolean>(false);
 
-  // 확정 워크플로우 상태
+  // 확정 여부 (검토 페이지에서 전체 일괄 확정됨)
   const [isFinalized, setIsFinalized] = useState<boolean>(false);
-  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
   // 기존 본인 채점 내역이 있으면 로드
   useEffect(() => {
@@ -122,43 +121,6 @@ export default function JudgeViewer({
     }
   };
 
-  const handleFinalSubmit = async () => {
-    if (isFinalized) return;
-    setSubmitting(true);
-    try {
-      // 1. 점수 저장
-      await onSubmitEvaluation({
-        submissionId: submission.id,
-        problemDefinitionScore: pScore,
-        visualizationCreativityScore: vScore,
-        socialValueScore: sScore,
-        majorUtilizationScore: mScore,
-        dataAccuracyScore: dScore,
-        comment,
-      });
-
-      // 2. 최종 확정 PATCH
-      const res = await fetch('/api/evaluations', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ submissionId: submission.id }),
-      });
-
-      if (!res.ok) {
-        throw new Error('최종 확정 실패');
-      }
-
-      setIsFinalized(true);
-      setShowConfirmModal(false);
-    } catch (err) {
-      alert('최종 확정 중 오류가 발생했습니다.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleDownloadPDF = async () => {
     const element = document.getElementById(`submission-card-${submission.id}`);
     if (!element) return;
@@ -188,38 +150,6 @@ export default function JudgeViewer({
       {/* html/py 실행 미리보기 패널 */}
       {showLivePreview && targetUrl && (
         <LiveExecutionPanel url={targetUrl} onClose={() => setShowLivePreview(false)} />
-      )}
-
-      {/* 확인 모달 */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full mx-4">
-            <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
-              최종 확정 제출
-            </h3>
-            <p className="text-sm text-gray-700 mb-6">
-              정말 이대로 하시겠습니까? 확정 후에는 수정이 불가합니다.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium text-sm transition"
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                onClick={handleFinalSubmit}
-                disabled={submitting}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-bold text-sm transition flex items-center gap-2"
-              >
-                {submitting ? '처리 중...' : '저장'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* 왼쪽: 심사 자료 & Google Drive 미리보기 (7 columns, 오른쪽 채점표 패널 높이 기준으로 늘어남) */}
@@ -507,26 +437,15 @@ export default function JudgeViewer({
                 이미 최종 확정되었습니다
               </div>
             ) : (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleTempSave}
-                  disabled={submitting}
-                  className="flex-1 py-3 px-4 rounded-xl bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-bold text-sm transition flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <Send className="w-4 h-4 text-gray-500" />
-                  {submitting ? '저장 중...' : '임시 저장'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmModal(true)}
-                  disabled={submitting}
-                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-md shadow-blue-100 transition flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  최종 확정 제출
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleTempSave}
+                disabled={submitting}
+                className="w-full py-3 px-4 rounded-xl bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-bold text-sm transition flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Send className="w-4 h-4 text-gray-500" />
+                {submitting ? '저장 중...' : '임시 저장'}
+              </button>
             )}
 
             {submittedSuccess && !isFinalized && (

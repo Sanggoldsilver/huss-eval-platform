@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import JudgeViewer from '@/components/JudgeViewer';
+import ReviewPanel from '@/components/ReviewPanel';
 import RankingsTable from '@/components/RankingsTable';
 import AdminUserModal from '@/components/AdminUserModal';
 import AdminUploadModal from '@/components/AdminUploadModal';
 import AdminLoginModal from '@/components/AdminLoginModal';
 import KakaoLoginModal from '@/components/KakaoLoginModal';
-import { Lock, FileCheck2, PlusCircle, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Lock, FileCheck2, PlusCircle, AlertCircle, RefreshCw, ShieldCheck, ClipboardList } from 'lucide-react';
 
 // 카카오 window 타입 선언
 declare global {
@@ -45,6 +46,9 @@ export default function HomePage() {
   const [rankings, setRankings] = useState<any[]>([]);
   const [evaluatorSheets, setEvaluatorSheets] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+
+  // 채점 화면 / 검토 화면 전환
+  const [viewMode, setViewMode] = useState<'score' | 'review'>('score');
 
   // 모달 제어 상태
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
@@ -189,6 +193,20 @@ export default function HomePage() {
     }
   };
 
+  const handleFinalizeAll = async () => {
+    if (!currentUser) return;
+
+    const res = await fetch('/api/evaluations', {
+      method: 'PATCH',
+    });
+
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || '최종 저장 실패');
+    }
+    await loadData(currentUser);
+  };
+
   const selectedSubmission = submissions.find((s) => s.id === selectedSubmissionId);
 
   return (
@@ -254,6 +272,13 @@ export default function HomePage() {
                   </button>
                 )}
               </div>
+            ) : viewMode === 'review' ? (
+              <ReviewPanel
+                submissions={submissions}
+                currentUserId={currentUser?.id || ''}
+                onBack={() => setViewMode('score')}
+                onFinalizeAll={handleFinalizeAll}
+              />
             ) : (
               <>
                 {/* 2. 작품 선택 탭 / 셀렉터 바 */}
@@ -290,6 +315,13 @@ export default function HomePage() {
                       title="새로고침"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => setViewMode('review')}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-xs font-semibold whitespace-nowrap flex items-center gap-1.5"
+                    >
+                      <ClipboardList className="w-3.5 h-3.5" /> 검토 및 최종 저장
                     </button>
                   </div>
                 </div>
