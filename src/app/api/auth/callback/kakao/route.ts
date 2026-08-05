@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
           email,
           status: 'APPROVED',
           role: 'SUPPORTER',
-          groupType: '서포터즈',
+          groupType: 'SUPPORTERS_TEAM',
         },
       });
     }

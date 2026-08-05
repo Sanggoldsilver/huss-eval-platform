@@ -166,7 +166,7 @@ export default function HomePage() {
       id: user.id,
       name: user.name,
       role: user.role || 'SUPPORTER',
-      groupType: user.groupType || '서포터즈',
+      groupType: user.groupType || 'SUPPORTERS_TEAM',
       status: user.status || 'APPROVED',
     };
     setCurrentUser(userState);
