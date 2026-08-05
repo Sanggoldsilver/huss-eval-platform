@@ -297,6 +297,7 @@ export default function HomePage() {
                 {/* 3. 심사위원 뷰어 컴포넌트 */}
                 {selectedSubmission && (
                   <JudgeViewer
+                    key={selectedSubmission.id}
                     submission={selectedSubmission}
                     currentUserRole={currentUser?.role || null}
                     currentUserId={currentUser?.id || ''}
