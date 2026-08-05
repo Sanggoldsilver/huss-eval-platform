@@ -56,6 +56,20 @@ export default function HomePage() {
   const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState<boolean>(false);
   const [isKakaoLoginModalOpen, setIsKakaoLoginModalOpen] = useState<boolean>(false);
 
+  // 종합 시트(랭킹)만 새로고침 — 채점 중인 슬라이더 상태에는 영향 없음
+  const loadRankings = async () => {
+    try {
+      const rankRes = await fetch('/api/rankings');
+      const rankData = await rankRes.json();
+      if (rankData.success) {
+        setRankings(rankData.rankings || []);
+        setEvaluatorSheets(rankData.evaluatorSheets || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // 데이터 로드
   const loadData = async (userOverride = currentUser) => {
     if (!userOverride) {
@@ -81,12 +95,7 @@ export default function HomePage() {
         }
       }
 
-      const rankRes = await fetch('/api/rankings');
-      const rankData = await rankRes.json();
-      if (rankData.success) {
-        setRankings(rankData.rankings || []);
-        setEvaluatorSheets(rankData.evaluatorSheets || []);
-      }
+      await loadRankings();
     } catch (e) {
       console.error(e);
     } finally {
@@ -130,6 +139,14 @@ export default function HomePage() {
     if (currentUser) {
       loadData(currentUser);
     }
+  }, [currentUser]);
+
+  // 종합 시트를 주기적으로 자동 새로고침 (다른 심사위원의 채점을 실시간에 가깝게 반영)
+  useEffect(() => {
+    if (!currentUser) return;
+    const intervalId = setInterval(loadRankings, 15000);
+    return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   const handleAdminLoginSuccess = (adminUser: any) => {

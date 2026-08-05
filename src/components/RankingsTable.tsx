@@ -62,6 +62,19 @@ export default function RankingsTable({ rankings, currentUserRole, evaluatorShee
   const isSupporter = currentUserRole === 'SUPPORTER';
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('summary');
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
+
+  const toggleComment = (key: string) => {
+    setExpandedComments((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
 
   const visibleSheets = isSupporter
     ? evaluatorSheets.filter(sheet => sheet.evaluatorId === currentUserId)
@@ -272,8 +285,12 @@ export default function RankingsTable({ rankings, currentUserRole, evaluatorShee
         </thead>
         <tbody className="divide-y divide-gray-100">
           {sheet.scores.map((score, index) => {
+            const commentKey = `${sheet.evaluatorId}-${score.submissionId}`;
+            const isCommentExpanded = expandedComments.has(commentKey);
+            const hasComment = !!score.comment;
+
             return (
-              <tr key={index} className="hover:bg-gray-50 transition">
+              <tr key={index} className="hover:bg-gray-50 transition align-top">
                 <td className="py-3 px-4 font-semibold text-gray-900">{score.submissionTitle}</td>
                 <td className="py-3 px-3">
                   <div className="text-gray-900">{score.department}</div>
@@ -291,7 +308,33 @@ export default function RankingsTable({ rankings, currentUserRole, evaluatorShee
                 <td className="py-3 px-2 text-center font-mono">{score.majorUtilizationScore}</td>
                 <td className="py-3 px-2 text-center font-mono">{score.dataAccuracyScore}</td>
                 <td className="py-3 px-2 text-center font-mono font-bold text-amber-600">{score.totalScore}</td>
-                <td className="py-3 px-4 max-w-[200px] truncate" title={score.comment}>{score.comment || '-'}</td>
+                <td className="py-3 px-4 max-w-[220px]">
+                  <div className="flex items-start gap-1.5">
+                    <span
+                      className={
+                        isCommentExpanded
+                          ? 'whitespace-pre-wrap break-words'
+                          : 'truncate'
+                      }
+                    >
+                      {score.comment || '-'}
+                    </span>
+                    {hasComment && (
+                      <button
+                        type="button"
+                        onClick={() => toggleComment(commentKey)}
+                        className="shrink-0 p-0.5 rounded hover:bg-gray-200 text-gray-500 transition"
+                        title={isCommentExpanded ? '단평 접기' : '단평 전체 보기'}
+                      >
+                        {isCommentExpanded ? (
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </td>
                 <td className="py-3 px-2 text-center">
                   {score.isFinalized ? (
                     <span className="inline-block px-2 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold">확정</span>
